@@ -133,7 +133,8 @@ def oauth_callback():
     }
 
     # Send this to GitHub.
-    r = requests.post("https://github.com/login/oauth/access_token", data=data)
+    r = requests.post("https://github.com/login/oauth/access_token", data=data,
+        headers={"Accept": "application/json"})
     if r.status_code == 200:
 
         payload = r.json()
