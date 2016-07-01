@@ -57,7 +57,7 @@ def oauth_redirect():
 @app.route("/oauth_callback")
 def oauth_callback():
     print("callback made", request)
-    payload = json.loads(request.get_data())
+    payload = request.headers
     print("payload", payload)
 
     return "hi"
