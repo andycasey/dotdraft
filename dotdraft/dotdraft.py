@@ -78,7 +78,9 @@ def is_valid_github_request(request):
     :param request:
         The Django WSGI request.
     """
-
+    print("checking request", request)
+    print("request dict keys", request.__dict__.keys())
+    print("request dict", request.__dict__)
 
     # Check the metadata headers.
     required_meta_headers = {
