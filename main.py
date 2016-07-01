@@ -5,13 +5,15 @@ import dotdraft
 
 app = Flask(__name__)
 
+
 @app.route("/", methods=["GET", ])
 def root():
     return render_template("index.html") 
 
+
 @app.route("/", methods=["POST", ])
 def recieve_payload():
-    print("Receiving POST payload")
+    logging.info("Receiving POST payload.")
 
     try:
         result = dotdraft.webhook(request)
