@@ -283,7 +283,7 @@ def latexdiff(old_path, new_path, **kwargs):
 
     # Execute latexdiff given some acceptable keywords.
     # TODO: allow keywords to get passed through here.
-    command = './hello/latexdiff "{}" "{}" > "{}"'.format(old_path, new_path, diff_path)
+    command = './app/latexdiff "{}" "{}" > "{}"'.format(old_path, new_path, diff_path)
     try:
         r = subprocess.check_output(command, shell=True)
 
@@ -407,12 +407,16 @@ def copy_previous_manuscript(repository_path, before_hash, manuscript_basename):
     return os.path.join(repository_path, before_basename)
 
 
-def webhook(request, status_context=".draft/revisions"):
+def webhook(request, database=None, status_context=".draft/revisions"):
     """
     Method to run when GitHub has triggered an event on a repository.
 
     :param request:
         A WSGI request, which might have come from GitHub.
+
+    :param database: [optional]
+        A Postgres database to store compiled PDFs in. If `None` is supplied,
+        then files will be uploaded to a temporary site.
     """
 
     logging.info("Received webhook: {}".format(request))
@@ -522,13 +526,31 @@ def webhook(request, status_context=".draft/revisions"):
     if success:
         logging.info("Created diff PDF successfully: {}".format(compiled_diff))
 
-        # Re-name the compiled_diff
-        os.system("mv {} app/static/{}".format(compiled_diff, uri))
+        # The compiled PDF either needs to be stored in a Postgres database as a
+        # blob, or uploaded and linked elsewhere.
 
-        # TODO: Heroku deletes it when the dyno spins down. Do I need to commit
-        #       it to the Heroku repository?
+        if database is None:
+            logging.warn("No database supplied. Using transfer.sh instead..")
+
+                upload_response = requests.put(
+                    url="https://transfer.sh/{}".format(uri),
+                    data=open(compiled_diff, "rb"))
+
+                if upload_response.status_code == 200:
+                    target_url = response.text.strip()
+
+                else:
+                    target_url = HEROKU_URL # TODO
+                    logger.warn("Upload failed: {}".format(
+                        upload_response.status_code))
+
+
+        else:
+            raise NotImplementedError("db not set up yet")
+
 
     else:
+        target_url = HEROKU_URL # TODO
         message =   "Something went wrong when trying to compile the PDF "\
                     "between `{}` and `{}`:\n\n"\
                     "````\n"\
@@ -539,18 +561,24 @@ def webhook(request, status_context=".draft/revisions"):
 
     if on_pull_request and success:
         commit.create_status("success", 
-            target_url="{}/static/{}".format(HEROKU_URL, uri),
-            description=".draft compiled the difference "\
+            target_url=target_url,
+            description=".draft compiled the differences "\
                         "between {} and {}".format(
                             base_sha[:4], head_sha[:4]),
             context=status_context)
 
+        if database is None:
+            r = gh.issues.comments.create(payload["number"],
+                "*Warning:* The link to the compiled PDF is not persistent and "
+                "will expire in two weeks. Set up `.draft` with a free Postgres"
+                " database to enable persistent links",
+                user=owner, repo=payload["repository"]["name"])
 
     elif on_pull_request and not success:
 
         commit.create_status("failure", 
             description=".draft build failure. See log for details.",
-            target_url=HEROKU_URL, context=status_context)
+            target_url=target_url, context=status_context)
 
         r = gh.issues.comments.create(payload["number"], message, 
             user=owner, repo=payload["repository"]["name"])
