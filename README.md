@@ -20,11 +20,18 @@ Setting up your repository with `.draft`
 
 0.  In the "Settings" area of your GitHub repository, go to "Webhooks & services" then click the "Add webhook" button.
 
-1.  Enter `https://dotdraft.herokuapp.com` as the Payload URL, select the "Send me *everything*" option, then click the green "Add webhook" button.
+1.  Enter [`https://dotdraft.herokuapp.com`](https://dotdraft.herokuapp.com) as the Payload URL, select the "Send me *everything*" option, then click the green "Add webhook" button.
 
 2.  That's it! Just commit a push to your repository or create a pull request, and `.draft` will do the rest.
 
 
+
+Creating your own `.draft` app on Heroku
+----------------------------------------
+The standard `.draft` build will work for any public repository, but if you want to create your own then just follow the instructions in [`SETUP.md`](SETUP.md)
+
+
+
 License
 -------
-Released under MIT license. For more information, see the `LICENSE` file. Copyright 2016 Andy Casey.
+Released under MIT license. For more information, see the [`LICENSE`](LICENSE) file. Copyright 2016 Andy Casey.
