@@ -572,22 +572,22 @@ def webhook(request, database=None, status_context=".draft/revisions"):
     if on_pull_request and success:
         commit.create_status("success", 
             target_url=target_url,
-            description=".draft compiled the differences "\
-                        "between {} and {}".format(
-                            base_sha[:4], head_sha[:4]),
+            description="compiled a PDF showing differences from {} to {}"\
+                .format(base_sha[:4], head_sha[:4]),
             context=status_context)
 
         if database is None:
             r = gh.issues.comments.create(payload["number"],
-                "*Warning:* The link to the compiled PDF is not persistent and "
-                "will expire in two weeks. Set up `.draft` with a free Postgres"
-                " database to enable persistent links",
+                "**Warning:** The link to the compiled PDF from `.draft` is "\
+                "**not** persistent and will expire in two weeks. Please set"\
+                " up `.draft` with a free Postgres database to enable "\
+                "persistent links.",
                 user=owner, repo=payload["repository"]["name"])
 
     elif on_pull_request and not success:
 
         commit.create_status("failure", 
-            description=".draft build failure. See log for details.",
+            description="Build failure. See log for details.",
             target_url=target_url, context=status_context)
 
         r = gh.issues.comments.create(payload["number"], message, 
