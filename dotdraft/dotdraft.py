@@ -464,6 +464,7 @@ def webhook(request, database=None, **kwargs):
 
     # Authenticate with GitHub.
     gh = pygithub.Github(token=GH_TOKEN)
+    repo = payload["repository"]["name"]
 
     # Run the difference between two LaTeX files.
     if not pull_request:
@@ -479,21 +480,21 @@ def webhook(request, database=None, **kwargs):
 
         # Create the payload for comment that will go back to GitHub.
         comment_response = gh.repos.commits.create_comment
-
-        #print(json.dumps(payload, indent=4))
+        owner = payload["repository"]["owner"]["name"]
+        paths = payload["commits"][-1]["added"] + payload["commits"][-1]["modified"]
+        
         print(payload)
 
         comment_payload = {
             "commit_id": head_sha,
             "position": 1,
             "line": 1,
-            #"path": os.path.basename(head_path),
-            #"body": message
+            "path": paths[0]
         }
         commit_kwds = {
             "sha": head_sha,
             "user": owner,
-            "repo": payload["repository"]["name"]
+            "repo": repo
         }
 
         if base_sha is None:
@@ -501,9 +502,7 @@ def webhook(request, database=None, **kwargs):
 
             # We need a path file to compare against. So just get the first one
             # from added/modified.
-            paths = payload["commits"][-1]["added"] + payload["commits"][-1]["modified"]
             comment_payload.update({
-                "path": paths[0],
                 "body": "`.draft`: No base commit found to compare against."
             })
             comment_response(comment_payload, **commit_kwds)
@@ -515,10 +514,8 @@ def webhook(request, database=None, **kwargs):
 
         if manuscript_basename is None:
             logging.info("No manuscript found.")
-            paths = payload["commits"][-1]["added"] + payload["commits"][-1]["modified"]
             comment_payload.update({
-                "path": paths[0],
-                "body": "`.draft`: No manuscript (`*.tex`) file found in repository."
+                "body": "`.draft`: No manuscript (`*.tex`) found in repository."
             })
             comment_response(comment_payload, **commit_kwds)
             return None
@@ -531,10 +528,8 @@ def webhook(request, database=None, **kwargs):
         base_path = copy_previous_manuscript(
             repository_path, base_sha, manuscript_basename)
     
-        owner = payload["repository"]["owner"]["name"]
         uri = "{owner}.{repo}.{base}..{head}.pdf".format(owner=owner,
-            repo=payload["repository"]["name"],
-            base=base_sha[:10], head=head_sha[:10])
+            repo=repo, base=base_sha[:10], head=head_sha[:10])
 
 
     else:
@@ -587,7 +582,6 @@ def webhook(request, database=None, **kwargs):
         base_sha = payload["pull_request"]["base"]["sha"]
         logging.debug("Comparing SHAs {} with {}".format(base_sha, head_sha))
 
-        repo = payload["repository"]["name"]
         owner = payload["repository"]["owner"]["login"]
         uri = "{owner}.{repo}.{issue}.pdf".format(
             owner=owner, repo=repo, issue=payload["number"])
