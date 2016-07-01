@@ -1,5 +1,8 @@
+import json
 import logging
-from flask import Flask, render_template, request
+import os
+from flask import Flask, redirect, render_template, request
+from urllib import urlencode
 
 import dotdraft
 
@@ -22,3 +25,39 @@ def recieve_payload():
         logging.exception("Exception occurred:")
 
     return "Everything is going to be 200 OK."
+
+
+
+@app.route("/signup")
+def oauth_redirect():
+    """
+    Redirect users to request GitHub access.
+
+    See https://developer.github.com/v3/oauth/
+    """
+
+    data = {
+        "client_id": os.environ["GH_CLIENT_ID"],
+        "redirect_uri": "{}/oauth_callback".format(os.environ["HEROKU_URL"]),
+        "state": "not-for-production",
+        "scope": " ".join([
+            "public_repo",
+            "write:repo_hook"
+        ])
+    }
+
+    url = "https://github.com/login/oauth/authorize?{}".format(urlencode(data))
+
+    print(data)
+    logging.info("Redirecting to {}".format(url))
+
+    return redirect(url)
+
+
+@app.route("/oauth_callback")
+def oauth_callback():
+    print("callback made", request)
+    payload = json.loads(request.get_data())
+    print("payload", payload)
+
+    return "hi"
