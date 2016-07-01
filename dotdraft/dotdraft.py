@@ -8,6 +8,7 @@ from __future__ import (division, print_function, absolute_import,
 
 __all__ = ["webhook"]
 
+import json
 import logging
 import os
 import requests
@@ -436,8 +437,8 @@ def webhook(request):
     status_context = ".draft/revisions"
     on_pull_request = (request.environ["HTTP_X_GITHUB_EVENT"] == "pull_request")
 
-    payload = request.get_data() 
-    #payload = request.body
+    payload = json.loads(request.get_data())
+
     print("is_pr", on_pull_request, payload)
 
     if on_pull_request and payload["pull_request"]["state"] != "open":
