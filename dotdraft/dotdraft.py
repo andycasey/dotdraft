@@ -155,7 +155,12 @@ def get_commit_comparisons(payload, repository_path=None):
                 prev_hash = hash_stub
     
     else:
-        return (None, after_hash)
+        # TODO:
+        REQUIRE_DD_IN_COMMIT_FOR_TRIGGER = False
+        if REQUIRE_DD_IN_COMMIT_FOR_TRIGGER:
+            return (None, after_hash)
+        else:
+            return (prev_hash, after_hash)
 
     # When this is the initial commit, GitHub gives a before hash of
     # '0000000000000000000000000000000000000000'
