@@ -59,5 +59,6 @@ def oauth_callback():
     print("callback made", request)
     payload = request.headers
     print("payload", payload)
+    print("request.args", request.args)
 
     return "hi"
