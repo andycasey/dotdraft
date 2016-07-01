@@ -161,7 +161,6 @@ def get_commit_comparisons(payload, repository_path=None):
     return (prev_hash, after_hash)
 
 
-# TODO: This can probably go into a GHPayload class.
 def get_manuscript_path(repository_path):
     """
     Get the path of the manuscript TeX file that will be used for comparisons.
@@ -256,19 +255,11 @@ def clone_repository(payload, branch=None):
     """
 
     twd = mkdtemp()
-    print("Created TWD", twd)
     branch = "" if branch is None else "-b {}".format(branch)
-
-    print("branch", branch)
-    print("payload", type(payload), payload)
-    print("payload repository", payload["repository"]) 
-    print("payload repo clone", payload["repository"]["clone_url"])
-    print("twd", twd)
 
     r = git("clone {} {} {}".format(
         branch, payload["repository"]["clone_url"], twd))
-    print(r)
-
+    
     return twd
 
 
@@ -334,8 +325,8 @@ def latex(path, timeout=30, **kwargs):
     try:
 
         stdout, stderr = p.communicate("{}\n".format(path))
-        print("stdout", stdout)
-        print("stderr", stderr)
+        logging.info("latex stdout:\n{}".format(stdout))
+        logging.info("latex stderr:\n{}".format(stderr))
 
         if timeout != -1:
             signal.alarm(0)
@@ -419,7 +410,7 @@ def copy_previous_manuscript(repository_path, before_hash, manuscript_basename):
     return os.path.join(repository_path, before_basename)
 
 
-def webhook(request):
+def webhook(request, status_context=".draft/revisions"):
     """
     Method to run when GitHub has triggered an event on a repository.
 
@@ -427,26 +418,27 @@ def webhook(request):
         A WSGI request, which might have come from GitHub.
     """
 
-    print("Received request: {}".format(request))
+    logging.info("Received webhook: {}".format(request))
 
     # Check the request is from GitHub, otherwise do nothing.
     if not is_valid_github_request(request):
-        print("Not valid GitHub request")
+        logging.info("Not valid GitHub request. Ignoring.")
         return False
-
-    status_context = ".draft/revisions"
-    on_pull_request = (request.environ["HTTP_X_GITHUB_EVENT"] == "pull_request")
 
     payload = json.loads(request.get_data())
 
-    print("is_pr", on_pull_request, payload)
-
+    on_pull_request = (request.environ["HTTP_X_GITHUB_EVENT"] == "pull_request")
     if on_pull_request and payload["pull_request"]["state"] != "open":
+        logging.info("Webhook triggered by closed pull request. Ignoring.")
         return None
 
     elif on_pull_request:
-        print("PR payload", payload)
+        logging.info("Webhook triggered by open pull request.")
 
+        logging.info("Comparing refs {} with {}".format(
+            payload["pull_request"]["base"]["ref"],
+            payload["pull_request"]["head"]["ref"]))
+        
         # Clone the base and head repositories.
         base_repository = clone_repository(
             payload, payload["pull_request"]["base"]["ref"])
@@ -465,9 +457,13 @@ def webhook(request):
         base_path = os.path.join(base_repository, manuscript_basename)
         head_path = os.path.join(head_repository, manuscript_basename)
 
+        logging.debug("Comparing paths {} with {}".format(base_path, head_path))
+
         # Keep the SHAs.
         head_sha = payload["pull_request"]["head"]["sha"]
         base_sha = payload["pull_request"]["base"]["sha"]
+
+        logging.debug("Comparing SHAs {} with {}".format(base_sha, head_sha))
 
         repo = payload["repository"]["name"]
         owner = payload["repository"]["owner"]["login"]
@@ -485,8 +481,7 @@ def webhook(request):
 
 
     else:
-        print("Webhook triggered by commit:", payload)
-        logging.info("Testing logging")
+        logging.info("Webhook triggered by commit(s)")
 
         # Clone the repository.
         repository_path = clone_repository(payload)
