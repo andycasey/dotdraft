@@ -76,9 +76,9 @@ def oauth_callback():
     }
 
     # Send this to GitHub.
-    url = "https://github.com/login/oauth/access_token"
-    response = requests.post(url, data=data)
-    print("response is", response, response.json)
+    response = requests.post("https://github.com/login/oauth/access_token",
+        data=data)
+    print("response is", response, response.text)
 
     return "hi"
 
