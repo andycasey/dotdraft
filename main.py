@@ -115,16 +115,16 @@ def oauth_callback():
     cursor.execute(
         "SELECT ip_address, created FROM oauth_states WHERE state = %s",
         (request.args.get("state", None), ))
-    results = cursor.fetchone()
+    result = cursor.fetchone()
+
+    if result is None:
+        return (render_template("403.html"), 403)
+
 
     print("res", results)
 
 
 
-
-    assert request.args.get("state") == "not-for-production"
-
-    print("request.args", request.args)
 
     # Check the state is as expected (from the db...)
 
