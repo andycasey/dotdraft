@@ -111,23 +111,15 @@ def oauth_callback():
     """
 
     # Do we have this state?
+    state = request.args.get("state", None)
     cursor = get_database().cursor()
     cursor.execute(
         "SELECT ip_address, created FROM oauth_states WHERE state = %s",
-        (request.args.get("state", None), ))
-    result = cursor.fetchone()
+        (state, ))
 
-    print("result", result)
-    if result is None:
+    if cursor.fetchone() is None:
+        cursor.close()
         return (render_template("403.html"), 403)
-
-
-    print("res", results)
-
-
-
-
-    # Check the state is as expected (from the db...)
 
     data = {
         "client_id": os.environ["GH_CLIENT_ID"],
@@ -136,9 +128,21 @@ def oauth_callback():
     }
 
     # Send this to GitHub.
-    response = requests.post("https://github.com/login/oauth/access_token",
-        data=data)
-    print("response is", response, response.text)
+    r = requests.post("https://github.com/login/oauth/access_token", data=data)
+    if r.status_code == 200:
+
+        # Delete the state, since we no longer need it.
+        cursor.execute("DELETE FROM oauth_states WHERE state = %s", (state, ))
+
+        # Create a new user.
+        print("response is", r, r.text, r.__dict__)        
+
+        cursor.close()
+        get_database().commit()
+
+
+    else:
+        return (render_template("500.html"), 500)
 
     return "hi"
 
