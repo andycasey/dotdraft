@@ -479,12 +479,15 @@ def webhook(request, database=None, **kwargs):
 
         # Create the payload for comment that will go back to GitHub.
         comment_response = gh.repos.commits.create_comment
-        print(json.dumps(payload, indent=4))
+
+        #print(json.dumps(payload, indent=4))
+        print(payload)
+
         comment_payload = {
             "commit_id": head_sha,
-            "path": os.path.basename(head_path),
             "position": 1,
             "line": 1,
+            #"path": os.path.basename(head_path),
             #"body": message
         }
         commit_kwds = {
@@ -496,8 +499,13 @@ def webhook(request, database=None, **kwargs):
         if base_sha is None:
             logging.info("No base SHA found; nothing to do.")
 
-            comment_payload["body"] \
-                = "`.draft`: No base commit found to compare against."
+            # We need a path file to compare against. So just get the first one
+            # from added/modified.
+            paths = payload["commits"][-1]["added"] + payload["commits"][-1]["modified"]
+            comment_payload.update({
+                "path": paths[0],
+                "body": "`.draft`: No base commit found to compare against."
+            })
             comment_response(comment_payload, **commit_kwds)
             return None
 
@@ -507,10 +515,16 @@ def webhook(request, database=None, **kwargs):
 
         if manuscript_basename is None:
             logging.info("No manuscript found.")
-            comment_payload["body"] \
-                = "`.draft`: No manuscript (`*.tex`) file found in repository."
+            paths = payload["commits"][-1]["added"] + payload["commits"][-1]["modified"]
+            comment_payload.update({
+                "path": paths[0],
+                "body": "`.draft`: No manuscript (`*.tex`) file found in repository."
+            })
             comment_response(comment_payload, **commit_kwds)
             return None
+
+        else:
+            comment_payload["path"] = manuscript_basename
 
         # base = original; head = changed
         head_path = os.path.join(repository_path, manuscript_basename)
