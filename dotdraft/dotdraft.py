@@ -16,14 +16,14 @@ import signal
 import subprocess
 import yaml
 from collections import deque
-from random import choice
 from re import search as re_search
-from string import (ascii_uppercase, digits)
 from tempfile import mkdtemp
 
 # This is so dumb.
 import github 
 import pygithub3 as pygithub
+
+import utils
 
 GH_TOKEN = os.environ["GH_TOKEN"]
 HEROKU_URL = os.environ["HEROKU_URL"] # There must be a better way..
@@ -35,9 +35,6 @@ class Alarm(Exception):
 def alarm_handler(signum, frame):
     raise Alarm
 
-def random_string(N=10):
-    """ Return a random string of alphanumeric characters of length `N`. """
-    return ''.join(choice(ascii_uppercase + digits) for _ in range(N))
 
 
 # Specific methods.
@@ -378,9 +375,9 @@ def get_unused_filename(folder, suffix=None, N=10):
 
     suffix = suffix or ""
 
-    basename = "".join([random_string(N=N), suffix])
+    basename = "".join([utils.random_string(N=N), suffix])
     while os.path.exists(os.path.join(folder, basename)):
-        basename = "".join([random_string(N=N), suffix])
+        basename = "".join([utils.random_string(N=N), suffix])
 
     return os.path.join(folder, basename)
 
@@ -408,9 +405,9 @@ def copy_previous_manuscript(repository_path, before_hash, manuscript_basename):
     """
 
     # Generate a temporary filename.    
-    before_basename = "{}.tex".format(random_string())
+    before_basename = "{}.tex".format(utils.random_string())
     while os.path.exists(os.path.join(repository_path, before_basename)):
-        before_basename = "{}.tex".format(random_string())
+        before_basename = "{}.tex".format(utils.random_string())
 
     # TODO FAIL
     r = git("show {}:{} > {}".format(

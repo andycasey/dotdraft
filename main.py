@@ -2,27 +2,50 @@ import json
 import logging
 import requests
 import os
-import psycopg2
+import psycopg2 as pg
 import urlparse
-from flask import Flask, redirect, render_template, request
+from flask import Flask, g, redirect, render_template, request
 from urllib import urlencode
 
 import dotdraft
 
 app = Flask(__name__)
 
-urlparse.uses_netloc.append("postgres")
-url = urlparse.urlparse(os.environ["DATABASE_URL"])
-conn = psycopg2.connect(
-    database=url.path[1:],
-    user=url.username,
-    password=url.password,
-    host=url.hostname,
-    port=url.port
-)
+
+def get_database():
+    """ Get a database connection for the application, if there is context. """
+
+    database = getattr(g, "_database", None)
+    if database is None:
+        urlparse.uses_netloc.append("postgres")
+        url = urlparse.urlparse(os.environ["DATABASE_URL"])
+        database = g._database = pg.connect(
+            database=url.path[1:],
+            user=url.username,
+            password=url.password,
+            host=url.hostname,
+            port=url.port
+        )
+    return database
 
 
+@app.teardown_appcontext
+def close_connection(exception):
+    """
+    Close any existing connection to the database.
 
+    :param exception:
+        An exception that is triggering the application teardown.
+    """
+
+    database = getattr(g, "_database", None)
+    if database is not None:
+        database.close()
+
+    return None
+
+
+# ROUTING
 
 @app.route("/", methods=["GET", ])
 def root():
@@ -51,13 +74,24 @@ def oauth_redirect():
     See https://developer.github.com/v3/oauth/
     """
 
+    # Create a random state and store it in the database.
+    state = dotdraft.utils.random_string(1024)
+    cursor = get_database().cursor()
+    r = cursor.execute(
+        "INSERT INTO oauth_states (state, ip_address) VALUES (%s, %s)",
+        (state, request.remote_addr))
+
+    print("signup r", r)
+    cursor.close()
+
     data = {
         "client_id": os.environ["GH_CLIENT_ID"],
         "redirect_uri": "{}/oauth".format(os.environ["HEROKU_URL"]),
-        "state": "not-for-production",
+        "state": state,
         "scope": " ".join([
-            "public_repo",
-            "write:repo_hook"
+            "user:email",       # To match the user's email address with hooks.
+            "public_repo",      # To make commit statuses.
+            "write:repo_hook"   # To setup the required hooks.
         ])
     }
 
@@ -73,6 +107,8 @@ def oauth_redirect():
 def oauth_callback():
     """
     Handle a callback from GitHub when a user has authorized the application.
+
+    See https://developer.github.com/v3/oauth/
     """
 
     assert request.args.get("state") == "not-for-production"
