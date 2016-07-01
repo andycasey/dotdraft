@@ -1,5 +1,6 @@
 import json
 import logging
+import github
 import requests
 import os
 import psycopg2 as pg
