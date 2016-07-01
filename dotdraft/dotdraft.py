@@ -535,7 +535,7 @@ def webhook(request, database=None, **kwargs):
             repository_path, base_sha, manuscript_basename)
     
         uri = "{owner}.{repo}.{base}..{head}.pdf".format(owner=owner,
-            repo=repo, base=base_sha[:10], head=head_sha[:10])
+            repo=repo, base=base_sha[:8], head=head_sha[:8])
 
 
     else:
@@ -609,7 +609,7 @@ def webhook(request, database=None, **kwargs):
                     "between `{}` and `{}`:\n\n"\
                     "````\n"\
                     "{}"\
-                    "````\n".format(base_sha[:10], head_sha[:10], stdout)
+                    "````\n".format(base_sha[:8], head_sha[:8], stdout)
 
         if pull_request:
             pr_kwds.update({
