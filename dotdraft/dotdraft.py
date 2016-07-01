@@ -86,16 +86,19 @@ def is_valid_github_request(request):
         
         # Only a key required?
         if key not in request.environ:
+            logging.debug("Missing required header: {}".format(key))
             return False
 
         # Specific values are acceptable.
         if  acceptable_values is not None \
         and request.environ[key] not in acceptable_values:
+            logging.debug(
+                "Header key/value pair is unacceptable: {}/{} acceptable: {}"\
+                    key, request.environ[key], ", ".join(acceptable_values))
             return False
 
-
     # Check the payload.
-    logging.info("Valid GitHub push request detected.")
+    logging.info("Valid GitHub webhook detected.")
     return True
 
 
@@ -410,7 +413,7 @@ def copy_previous_manuscript(repository_path, before_hash, manuscript_basename):
     return os.path.join(repository_path, before_basename)
 
 
-def webhook(request, database=None, status_context=".draft/revisions"):
+def webhook(request, database=None, **kwargs):
     """
     Method to run when GitHub has triggered an event on a repository.
 
@@ -421,6 +424,9 @@ def webhook(request, database=None, status_context=".draft/revisions"):
         A Postgres database to store compiled PDFs in. If `None` is supplied,
         then files will be uploaded to a temporary site.
     """
+
+    status_context = kwargs.pop("status_context", ".draft")
+
 
     logging.info("Received webhook: {}".format(request))
 
