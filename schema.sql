@@ -19,3 +19,4 @@ CREATE TABLE users (
     created timestamp without time zone not null
 );
 ALTER TABLE users ALTER created SET default now();
+ALTER TABLE users ADD CONSTRAINT unique_email UNIQUE (email);

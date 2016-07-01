@@ -48,7 +48,7 @@ def close_connection(exception):
 
 # ROUTING
 
-@app.route("/", methods=["GET", ])
+@app.route("/")
 def root():
     return render_template("index.html") 
 
@@ -62,8 +62,9 @@ def recieve_payload():
    
     except:
         logging.exception("Exception occurred:")
+        return ("You can't always win.", 500)
 
-    return "Everything is going to be 200 OK."
+    return ("Everything is going to be OK.", 200)
 
 
 

@@ -417,6 +417,7 @@ def copy_previous_manuscript(repository_path, before_hash, manuscript_basename):
     return os.path.join(repository_path, before_basename)
 
 
+
 def webhook(request, database=None, **kwargs):
     """
     Method to run when GitHub has triggered an event on a repository.
@@ -434,7 +435,7 @@ def webhook(request, database=None, **kwargs):
     pending_description = kwargs.pop(
         "pending_description", "compiling your differenced PDF")
 
-    logging.info("Received webhook: {}".format(request))
+    logging.info("Received webhook: {}".format(type(request)))
 
     # Check the request is from GitHub, otherwise do nothing.
     if not is_valid_github_request(request):
