@@ -1,4 +1,4 @@
-update-tlmgr-latrst
+update-tlmgr-latest
 tlmgr install collection-fontsrecommended 
 tlmgr install texlive-times
 tlmgr install lmodern
