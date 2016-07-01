@@ -320,7 +320,7 @@ def latex(path, timeout=30, **kwargs):
         stdout, and the stderr.
     """
 
-    p = subprocess.Popen([kwargs["latex"]], #cwd=os.path.dirname(path),
+    p = subprocess.Popen([kwargs["latex"]], cwd=os.path.dirname(path),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         shell=True)
 
@@ -596,6 +596,8 @@ def webhook(request, database=None, **kwargs):
     manuscript_diff = latexdiff(base_path, head_path, **settings)
 
     # Compile the manuscript_diff file.
+    # Copy the ulem.sty file into that dir first.
+    os.system("cp {0} {1}/{0}".format("ulem.sty", os.path.dirname(manuscript_diff)))
     compiled_diff, stdout, stderr = latex(manuscript_diff, **settings)
 
     # Check things were OK.
