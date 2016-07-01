@@ -117,6 +117,7 @@ def oauth_callback():
         (request.args.get("state", None), ))
     result = cursor.fetchone()
 
+    print("result", result)
     if result is None:
         return (render_template("403.html"), 403)
 
