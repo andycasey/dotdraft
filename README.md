@@ -10,9 +10,10 @@ Create your own `.draft` app on Heroku
 
 1.  Clone this repository:
 
-    `git clone git@github.com:andycasey/dotdraft.git dotdraft`
-
-    `cd dotdraft/`
+    ````
+    git clone git@github.com:andycasey/dotdraft.git dotdraft
+    cd dotdraft/
+    ````
 
 2.  Create a Heroku app:
 
