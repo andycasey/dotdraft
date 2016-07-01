@@ -259,6 +259,8 @@ def clone_repository(payload, branch=None):
     branch = "" if branch is None else "-b {}".format(branch)
 
     print("branch", branch)
+    print("payload", type(payload), payload)
+    print("payload repository", payload["repository"]) 
     print("payload repo clone", payload["repository"]["clone_url"])
     print("twd", twd)
 
