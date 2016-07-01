@@ -94,7 +94,7 @@ def is_valid_github_request(request):
         and request.environ[key] not in acceptable_values:
             logging.debug(
                 "Header key/value pair is unacceptable: {}/{} acceptable: {}"\
-                .format(key, request.environ[key], ", ".join(acceptable_values))
+                .format(key, request.environ[key], ", ".join(acceptable_values)))
             return False
 
     # Check the payload.
