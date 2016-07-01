@@ -263,8 +263,13 @@ def clone_repository(payload, branch=None):
     twd = mkdtemp()
     branch = "" if branch is None else "-b {}".format(branch)
 
+    print("branch", branch)
+    print("payload repo clone", payload["repository"]["clone_url"])
+    print("twd", twd)
+
     r = git("clone {} {} {}".format(
         branch, payload["repository"]["clone_url"], twd))
+    print(r)
 
     return twd
 
