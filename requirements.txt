@@ -1,0 +1,4 @@
+requests==2.8.1
+github
+pygithub3==0.5.1
+flask==0.10.1
