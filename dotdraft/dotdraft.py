@@ -435,8 +435,8 @@ def webhook(request, database=None, **kwargs):
         logging.info("Not valid GitHub request. Ignoring.")
         return False
 
-    pull_request = payload.get("number", 0)
     payload = json.loads(request.get_data())
+    pull_request = payload.get("number", 0)
 
     # TODO: Log the valid request in the DB
 
