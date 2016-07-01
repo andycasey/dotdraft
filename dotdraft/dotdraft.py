@@ -181,13 +181,13 @@ def get_manuscript_path(repository_path):
     except subprocess.CalledProcessError:
         logging.exception(
             "Cannot find any TeX files in repo at {}".format(repository_path))
-        return None
 
+        # TODO: Comment back on the repo? Send something? Anything?
+        raise
+        
     # Just in case the manuscript has spaces in it..
     basename = " ".join(str(r).split("\n")[0].strip().split()[1:])
     return basename
-
-
 
 
 def load_settings(repository_path=None):
@@ -234,9 +234,6 @@ def load_settings(repository_path=None):
                         settings[key] = given_settings[key]
 
     return settings
-
-
-
 
 
 def clone_repository(payload, branch=None):
@@ -475,9 +472,12 @@ def webhook(request, status_context=".draft/revisions"):
         pr = gh.get_repo("{}/{}".format(owner, repo)).get_pull(payload["number"])
         commit = deque(pr.get_commits(), maxlen=1).pop()
 
+        description = ".draft is compiling your differenced PDF"
         commit.create_status("pending", target_url=HEROKU_URL,
-            description=".draft is compiling your differenced PDF",
-            context=status_context)
+            description=description, context=status_context)
+
+        logging.info("Updated status context on {}/{}/{}: {} - {}".format(
+            owner, repo, payload["number"], status_context, description))
 
 
     else:
@@ -520,6 +520,7 @@ def webhook(request, status_context=".draft/revisions"):
     # Check things were OK.
     success = os.path.exists(compiled_diff)
     if success:
+        logging.info("Created diff PDF successfully: {}".format(compiled_diff))
 
         # Re-name the compiled_diff
         os.system("mv {} app/static/{}".format(compiled_diff, uri))
