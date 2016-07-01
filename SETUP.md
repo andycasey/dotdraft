@@ -37,3 +37,10 @@ Create your own `.draft` app on Heroku
     ````
 
 6.  Now just follow the instructions in "Setting up your repository with `.draft`", except specify your own Heroku app URL.
+
+7. Set up a Heroku Postgres addon
+
+    ````
+    heroku addons:create heroku-postgresql:hobby-basic
+    ````
+

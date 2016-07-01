@@ -2,12 +2,26 @@ import json
 import logging
 import requests
 import os
+import psycopg2
+import urlparse
 from flask import Flask, redirect, render_template, request
 from urllib import urlencode
 
 import dotdraft
 
 app = Flask(__name__)
+
+urlparse.uses_netloc.append("postgres")
+url = urlparse.urlparse(os.environ["DATABASE_URL"])
+conn = psycopg2.connect(
+    database=url.path[1:],
+    user=url.username,
+    password=url.password,
+    host=url.hostname,
+    port=url.port
+)
+
+
 
 
 @app.route("/", methods=["GET", ])
@@ -71,8 +85,6 @@ def oauth_callback():
         "client_id": os.environ["GH_CLIENT_ID"],
         "client_secret": os.environ["GH_CLIENT_SECRET"],
         "code": request.args.get("code"),
-        "redirect_uri": "{}/oauth/access".format(os.environ["HEROKU_URL"]),
-        "state": "not-for-production"
     }
 
     # Send this to GitHub.
@@ -82,8 +94,3 @@ def oauth_callback():
 
     return "hi"
 
-
-@app.route("/oauth/access")
-def oauth_access():
-    print("we has access", request)
-    return "hi there"
