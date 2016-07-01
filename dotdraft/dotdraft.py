@@ -435,7 +435,7 @@ def webhook(request):
     status_context = ".draft/revisions"
     on_pull_request = (request.environ["HTTP_X_GITHUB_EVENT"] == "pull_request")
 
-    print("wezkrug", request.environ["werkzeug.request"].__dict__)
+    print("wezkrug", request.environ["werkzeug.request"].environ["wsgi.input"].__dict__)
     payload = request.body
     print("is_pr", on_pull_request, payload)
 
