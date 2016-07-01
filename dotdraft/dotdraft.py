@@ -485,7 +485,7 @@ def webhook(request, database=None, **kwargs):
         pr = gh.get_repo("{}/{}".format(owner, repo)).get_pull(payload["number"])
         commit = deque(pr.get_commits(), maxlen=1).pop()
 
-        description = ".draft is compiling your differenced PDF"
+        description = "compiling your differenced PDF"
         commit.create_status("pending", target_url=HEROKU_URL,
             description=description, context=status_context)
 
@@ -569,7 +569,7 @@ def webhook(request, database=None, **kwargs):
                     "between `{}` and `{}`:\n\n"\
                     "````\n"\
                     "{}"\
-                    "````\n".format(base_sha[:10], head_sha[:10], stdout)
+                    "````\n".format(base_sha[:8], head_sha[:8], stdout)
 
     gh = pygithub.Github(token=GH_TOKEN)
 
@@ -577,7 +577,7 @@ def webhook(request, database=None, **kwargs):
         commit.create_status("success", 
             target_url=target_url,
             description="compiled a PDF highlighting differences from {} to {}"\
-                .format(base_sha[:10], head_sha[:10]),
+                .format(base_sha[:8], head_sha[:8]),
             context=status_context)
 
         if database is None:
