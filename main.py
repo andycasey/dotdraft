@@ -76,13 +76,15 @@ def oauth_redirect():
 
     # Create a random state and store it in the database.
     state = dotdraft.utils.random_string(1024)
-    cursor = get_database().cursor()
+    connection = get_database()
+    cursor = connection.cursor()
     r = cursor.execute(
         "INSERT INTO oauth_states (state, ip_address) VALUES (%s, %s)",
         (state, request.remote_addr))
 
     print("signup r", r)
     cursor.close()
+    connection.commit()
 
     data = {
         "client_id": os.environ["GH_CLIENT_ID"],
