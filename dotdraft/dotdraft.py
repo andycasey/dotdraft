@@ -320,34 +320,37 @@ def latex(path, timeout=30, **kwargs):
         stdout, and the stderr.
     """
 
-    p = subprocess.Popen([kwargs["latex"]], cwd=os.path.dirname(path),
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        shell=True)
+    commands = [kwargs["latex"], kwargs["latex"], kwargs["latex"]]
+    for command in commands:
 
-    if timeout != -1:
-        signal.signal(signal.SIGALRM, alarm_handler)
-        signal.alarm(timeout)
-
-    try:
-
-        stdout, stderr = p.communicate("{}\n".format(path))
-        logging.info("latex stdout:\n{}".format(stdout))
-        logging.info("latex stderr:\n{}".format(stderr))
+        p = subprocess.Popen([command], cwd=os.path.dirname(path),
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, shell=True)
 
         if timeout != -1:
-            signal.alarm(0)
+            signal.signal(signal.SIGALRM, alarm_handler)
+            signal.alarm(timeout)
 
-    except Alarm:
-
-        # process might have died before getting to this line
-        # so wrap to avoid OSError: no such process
         try:
-            os.kill(p.pid, signal.SIGKILL)
 
-        except OSError:
-            pass
-        
-        raise OSError("timeout")
+            stdout, stderr = p.communicate("{}\n".format(path))
+            logging.debug("latex stdout:\n{}".format(stdout))
+            logging.debug("latex stderr:\n{}".format(stderr))
+
+            if timeout != -1:
+                signal.alarm(0)
+
+        except Alarm:
+
+            # process might have died before getting to this line
+            # so wrap to avoid OSError: no such process
+            try:
+                os.kill(p.pid, signal.SIGKILL)
+
+            except OSError:
+                pass
+            
+            raise OSError("timeout")
 
     base_path, ext = os.path.splitext(path)
     compiled_pdf = os.path.join(os.path.dirname(path),
