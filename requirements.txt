@@ -3,3 +3,4 @@ pygithub3==0.5.1
 PyGithub
 flask==0.10.1
 gunicorn==19.4.5
+pyyaml==3.11
