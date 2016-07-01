@@ -13,6 +13,8 @@ Example
 
 [example gif showing how it works]
 
+**check out the stable branch if you want to roll your own**
+
 
 **Live demo** -- a link to a PR with this enabled.
 
