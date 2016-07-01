@@ -1,5 +1,6 @@
 import json
 import logging
+import requests
 import os
 from flask import Flask, redirect, render_template, request
 from urllib import urlencode
@@ -38,7 +39,7 @@ def oauth_redirect():
 
     data = {
         "client_id": os.environ["GH_CLIENT_ID"],
-        "redirect_uri": "{}/oauth_callback".format(os.environ["HEROKU_URL"]),
+        "redirect_uri": "{}/oauth".format(os.environ["HEROKU_URL"]),
         "state": "not-for-production",
         "scope": " ".join([
             "public_repo",
@@ -54,11 +55,35 @@ def oauth_redirect():
     return redirect(url)
 
 
-@app.route("/oauth_callback")
+@app.route("/oauth")
 def oauth_callback():
-    print("callback made", request)
-    payload = request.headers
-    print("payload", payload)
+    """
+    Handle a callback from GitHub when a user has authorized the application.
+    """
+
+    assert request.args.get("state") == "not-for-production"
+
     print("request.args", request.args)
 
+    # Check the state is as expected (from the db...)
+
+    data = {
+        "client_id": os.environ["GH_CLIENT_ID"],
+        "client_secret": os.environ["GH_CLIENT_SECRET"],
+        "code": request.args.get("code"),
+        "redirect_uri": "{}/oauth/access".format(os.environ["HEROKU_URL"]),
+        "state": "not-for-production"
+    }
+
+    # Send this to GitHub.
+    url = "https://github.com/login/oauth/access_token"
+    response = requests.post(url, data=data)
+    print("response is", response, response.json)
+
     return "hi"
+
+
+@app.route("/oauth/access")
+def oauth_access():
+    print("we has access", request)
+    return "hi there"
