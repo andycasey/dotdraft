@@ -14,7 +14,7 @@ ALTER TABLE oauth_states ADD CONSTRAINT unique_state UNIQUE (state);
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
     email char(250) not null,
-    access_token char(40) not null,
+    token char(40) not null,
     scope char(120) not null,
     created timestamp without time zone not null
 );

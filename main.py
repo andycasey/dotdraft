@@ -110,13 +110,18 @@ def oauth_callback():
     See https://developer.github.com/v3/oauth/
     """
 
-    # Do we have this state?
     state = request.args.get("state", None)
+    if state is None:
+        return (render_template("403.html"), 403)
+
     cursor = get_database().cursor()
     cursor.execute(
         "SELECT ip_address, created FROM oauth_states WHERE state = %s",
         (state, ))
 
+    # TODO: Make oauth_tokens expire? Require the same IP address?
+
+    # Do we have this state?
     if cursor.fetchone() is None:
         cursor.close()
         return (render_template("403.html"), 403)
@@ -131,18 +136,27 @@ def oauth_callback():
     r = requests.post("https://github.com/login/oauth/access_token", data=data)
     if r.status_code == 200:
 
-        # Delete the state, since we no longer need it.
-        cursor.execute("DELETE FROM oauth_states WHERE state = %s", (state, ))
+        payload = r.json()
+
+        # Need to know who this user is.
+        user = github.GitHub(login_or_token=payload["access_token"]).get_user()
+        primary_email_address \
+            = [item["email"] for item in user.get_emails() if item["primary"]][0]
 
         # Create a new user.
-        print("response is", r, r.text, r.json, r.__dict__)        
+        cursor.execute(
+            "INSERT INTO users (email, token, scope) VALUES (%s, %s, %s)",
+            (primary_email_address, payload["access_token"], payload["scope"]))
+
+        # Delete the state, since we no longer need it.
+        cursor.execute("DELETE FROM oauth_states WHERE state = %s", (state, ))
 
         cursor.close()
         get_database().commit()
 
+        return render_template("oauth_success.html")
 
     else:
         return (render_template("500.html"), 500)
 
-    return "hi"
 
