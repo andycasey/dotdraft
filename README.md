@@ -1,7 +1,7 @@
 `.draft` - a carrot for open science
 ====================================
 
-`.draft` is a free cloud-based service that creates a PDF highlighting changes made to your `TeX` file. `.draft` is a [GitHub Integrations](https://github.com/integrations) service that runs on Heroku.
+`.draft` is a free cloud-based service that creates a PDF highlighting changes made to your `TeX` file. It's integrated with GitHub so that when you push changes or create a pull request, `.draft` will link to the PDF either by a commit comment or through the [GitHub Integrations API](https://github.com/integrations). In the (fierce) spirit of open-source science, `.draft` will only work on public GitHub repositories.
 
 ![Built at #dotastro](http://img.shields.io/badge/Built%20at-%23dotastro-blue.svg?style=flat)
 
