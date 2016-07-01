@@ -24,8 +24,6 @@ from tempfile import mkdtemp
 import github 
 import pygithub3 as pygithub
 
-logger = logging.getLogger(__name__)
-
 GH_TOKEN = os.environ["GH_TOKEN"]
 HEROKU_URL = os.environ["HEROKU_URL"] # There must be a better way..
 
@@ -77,9 +75,6 @@ def is_valid_github_request(request):
     :param request:
         The Django WSGI request.
     """
-    print("checking request", request)
-    print("request dict keys", request.__dict__.keys())
-    print("request dict", request.__dict__)
 
     # Check the metadata headers.
     required_meta_headers = {
@@ -87,7 +82,6 @@ def is_valid_github_request(request):
         "HTTP_X_GITHUB_DELIVERY": None
     }
     for key, acceptable_values in required_meta_headers.items():
-        print("Check", key, request.environ, acceptable_values)
         
         # Only a key required?
         if key not in request.environ:
@@ -100,7 +94,7 @@ def is_valid_github_request(request):
 
 
     # Check the payload.
-    logger.info("Valid GitHub push request detected.")
+    logging.info("Valid GitHub push request detected.")
     return True
 
 
@@ -150,7 +144,7 @@ def get_commit_comparisons(payload, repository_path=None):
             
             except subprocess.CalledProcessError:
                 # Invalid hash stub. Use the previous commit.
-                logger.exception(
+                logging.exception(
                     "Invalid hash stub given '{}':".format(hash_stub))
                 
             else:
@@ -185,7 +179,7 @@ def get_manuscript_path(repository_path):
                 'sort -rg | grep ".tex$"', cwd=repository_path)
     
     except subprocess.CalledProcessError:
-        logger.exception(
+        logging.exception(
             "Cannot find any TeX files in repo at {}".format(repository_path))
         return None
 
@@ -217,14 +211,14 @@ def load_settings(repository_path=None):
     if repository_path is not None:
         path = os.path.join(repository_path, ".draft.yml")
         if os.path.exists(path):
-            logger.info("Loading settings from {}".format(path))
+            logging.info("Loading settings from {}".format(path))
 
             try:
                 with open(path, "r") as fp:
                     given_settings = yaml.load(fp)
 
             except yaml.YAMLError:
-                logger.exception("Cannot parse settings from {}".format(path))
+                logging.exception("Cannot parse settings from {}".format(path))
 
             else:
                 given_settings = given_settings or {}
@@ -261,6 +255,7 @@ def clone_repository(payload, branch=None):
     """
 
     twd = mkdtemp()
+    print("Created TWD", twd)
     branch = "" if branch is None else "-b {}".format(branch)
 
     print("branch", branch)
@@ -302,7 +297,7 @@ def latexdiff(old_path, new_path, **kwargs):
         r = subprocess.check_output(command, shell=True)
 
     except subprocess.CalledProcessError:
-        logger.exception("Exception when calling: {}".format(command))
+        logging.exception("Exception when calling: {}".format(command))
         raise
 
     else:
@@ -488,7 +483,7 @@ def webhook(request):
 
     else:
         print("Webhook triggered by commit:", payload)
-        logger.info("Testing logging")
+        logging.info("Testing logging")
 
         # Clone the repository.
         repository_path = clone_repository(payload)
@@ -504,7 +499,7 @@ def webhook(request):
         base_sha, head_sha = get_commit_comparisons(payload, repository_path)
 
         if base_sha is None:
-            logger.info("No base SHA found; nothing to do.")
+            logging.info("No base SHA found; nothing to do.")
             return None
 
         # base = original; head = changed
