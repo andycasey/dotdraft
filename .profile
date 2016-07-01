@@ -1,7 +1,7 @@
-tlmgr option repository ftp://tug.org/historic/systems/texlive/2015/tlnet-final
-tlmgr update --self
+#tlmgr option repository ftp://tug.org/historic/systems/texlive/2015/tlnet-final
+#tlmgr update --self
 #tlmgr update --all
-tlmgr install collection-fontsrecommended 
+#tlmgr install collection-fontsrecommended 
 #tlmgr install texlive-times
 #tlmgr install lmodern
 #tlmgr install texinfo
