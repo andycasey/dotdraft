@@ -23,7 +23,7 @@ from tempfile import mkdtemp
 import github 
 import pygithub3 as pygithub
 
-import utils
+from . import utils
 
 GH_TOKEN = os.environ["GH_TOKEN"]
 HEROKU_URL = os.environ["HEROKU_URL"] # There must be a better way..
