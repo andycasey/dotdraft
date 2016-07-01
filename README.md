@@ -6,6 +6,28 @@
 ![Built at #dotastro](http://img.shields.io/badge/Built%20at-%23dotastro-blue.svg?style=flat)
 
 
+How does it work?
+-----------------
+
+Once you've added a webhook to get `.draft` running on your repository, here's what happens:
+
+0. GitHub will alert `.draft` when you push a commit or open a pull request.
+
+1. `.draft` will clone your repository
+
+2. Unless your manuscript file is specified in a `.draft.yml` file in your repository, `.draft` will look for your LaTeX manuscript by finding the `*.tex` file that has been edited **most**
+
+3. If the webhook was triggered by a pull request, the base (old) and head (new) versions of your manuscript are found by comparing branches. If the webhook was triggered by a commit, then by default the previous commit is considered the base. You can change this by specifying `[dd <sha/tag>]` in a commit message, and `.draft` will treat the SHA/tag given as the base for comparison.
+
+4. A `latexdiff` is run against the base and head versions and a PDF is compiled that highlights the changes made
+
+5. `.draft` comments back on the commit or pull request with a link to the compiled PDF
+
+6. ???
+
+7. Profit!
+
+
 Example
 -------
 
@@ -13,6 +35,7 @@ Example
 
 
 **Live demo** -- a link to a PR with this enabled.
+
 
 
 Setting up your repository with `.draft`
