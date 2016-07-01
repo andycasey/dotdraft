@@ -521,8 +521,6 @@ def webhook(request, database=None, status_context=".draft/revisions"):
     # Run difftex on the before and after.
     manuscript_diff = latexdiff(base_path, head_path, **settings)
 
-    logging.debug("Result of latexdiff: {}".format(manuscript_diff))
-
     # Compile the manuscript_diff file.
     compiled_diff, stdout, stderr = latex(manuscript_diff, **settings)
 
