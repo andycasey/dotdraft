@@ -88,15 +88,15 @@ def is_valid_github_request(request):
         "HTTP_X_GITHUB_DELIVERY": None
     }
     for key, acceptable_values in required_meta_headers.items():
-        print("Check", key, request.META, acceptable_values)
+        print("Check", key, request.environ, acceptable_values)
         
         # Only a key required?
-        if key not in request.META:
+        if key not in request.environ:
             return False
 
         # Specific values are acceptable.
         if  acceptable_values is not None \
-        and request.META[key] not in acceptable_values:
+        and request.environ[key] not in acceptable_values:
             return False
 
 
@@ -433,8 +433,9 @@ def webhook(request):
         return False
 
     status_context = ".draft/revisions"
-    on_pull_request = (request.META["HTTP_X_GITHUB_EVENT"] == "pull_request")
+    on_pull_request = (request.environ["HTTP_X_GITHUB_EVENT"] == "pull_request")
 
+    print("wezkrug", request.environ["werkzeug.request"].__dict__)
     payload = request.body
     print("is_pr", on_pull_request, payload)
 
