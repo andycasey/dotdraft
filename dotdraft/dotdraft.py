@@ -86,6 +86,7 @@ def is_valid_github_request(request):
         "HTTP_X_GITHUB_DELIVERY": None
     }
     for key, acceptable_values in required_meta_headers.items():
+        print(key, request.META, acceptable_values)
         
         # Only a key required?
         if key not in request.META:
@@ -426,6 +427,7 @@ def webhook(request):
 
     # Check the request is from GitHub, otherwise do nothing.
     if not is_valid_github_request(request):
+        print("Not valid GitHub request")
         return False
 
     status_context = ".draft/revisions"

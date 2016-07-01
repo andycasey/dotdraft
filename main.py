@@ -13,3 +13,4 @@ def recieve_payload():
    print("Doing stuff")
    if not dotdraft.webhook(request):
        return render_template("index.html")
+   return "Everything is going to be 200 OK."
