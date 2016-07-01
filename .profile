@@ -1,2 +1,2 @@
 echo "Installing recommended fonts for TeX"
-tlmgr install collection-fontsrecommended
+sudo apt-get install texlive-fonts-recommended
