@@ -141,7 +141,7 @@ def oauth_callback():
         payload = r.json()
 
         # Need to know who this user is.
-        user = github.GitHub(login_or_token=payload["access_token"]).get_user()
+        user = github.Github(login_or_token=payload["access_token"]).get_user()
         primary_email_address \
             = [item["email"] for item in user.get_emails() if item["primary"]][0]
 
