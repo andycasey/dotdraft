@@ -350,7 +350,8 @@ def latex(path, timeout=30, **kwargs):
         raise OSError("timeout")
 
     base_path, ext = os.path.splitext(path)
-    compiled_pdf = os.path.basename(os.path.extsep.join([base_path, "pdf"]))
+    compiled_pdf = os.path.join(os.path.dirname(path),
+        os.path.basename(os.path.extsep.join([base_path, "pdf"])))
 
     return (compiled_pdf, stdout, stderr)
 
