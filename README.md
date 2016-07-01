@@ -19,10 +19,20 @@ Create your own `.draft` app on Heroku
 
     `heroku create`
 
-3.  Add the TeX multipack so that we can run `latexdiff`. You will need to create a commit and push to Heroku to trigger a new build:
+3.  Add the TeX multipack so that we can run `latexdiff`. 
+
+    `heroku buildpacks:add git://github.com/holiture/heroku-buildpack-tex.git`
+
+4.  Set the `HEROKU_URL` and `GH_TOKEN` environment variables in the Heroku app. You will need to create a GitHub token [from here](https://github.com/settings/tokens).
 
     ````
-    heroku buildpacks:add git://github.com/holiture/heroku-buildpack-tex.git
+    heroku config:set HEROKU_URL=$(heroku info -s | grep web_url | cut -d= -f2)
+    heroku config:set GH_TOKEN=my_token
+    ````
+
+5.  Push a new commit to Heroku to trigger a build.
+
+    ````
     touch tmp
     git add tmp
     git commit -m "Trigger Heroku build"
