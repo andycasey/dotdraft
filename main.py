@@ -1,3 +1,4 @@
+import logging
 from flask import Flask, render_template, request
 
 import dotdraft
@@ -10,7 +11,12 @@ def root():
 
 @app.route("/", methods=["POST", ])
 def recieve_payload():
-   print("Doing stuff")
-   result = dotdraft.webhook(request)
-   print("Result is ", result)
-   return "Everything is going to be 200 OK."
+    print("Receiving POST payload")
+
+    try:
+        result = dotdraft.webhook(request)
+   
+    except:
+        logging.exception("Exception occurred:")
+
+    return "Everything is going to be 200 OK."

@@ -8,7 +8,6 @@ from __future__ import (division, print_function, absolute_import,
 
 __all__ = ["webhook"]
 
-import json
 import logging
 import os
 import requests
@@ -439,9 +438,6 @@ def webhook(request):
     #payload = request.body
     print("is_pr", on_pull_request, payload)
 
-    if not isinstance(payload, dict): payload = json.loads(payload)
-
-
     if on_pull_request and payload["pull_request"]["state"] != "open":
         return None
 
@@ -486,7 +482,8 @@ def webhook(request):
 
 
     else:
-        print("CM payload", payload)
+        print("Webhook triggered by commit:", payload)
+        logger.info("Testing logging")
 
         # Clone the repository.
         repository_path = clone_repository(payload)
@@ -505,7 +502,7 @@ def webhook(request):
             logger.info("No base SHA found; nothing to do.")
             return None
 
-        # head = changed.
+        # base = original; head = changed
         head_path = os.path.join(repository_path, manuscript_basename)
         base_path = copy_previous_manuscript(
             repository_path, base_sha, manuscript_basename)
