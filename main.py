@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 
 import dotdraft
 
@@ -10,5 +10,6 @@ def root():
 
 @app.route("/", methods=["POST", ])
 def recieve_payload():
+   print("Doing stuff")
    if not dotdraft.trigger_payload(request):
        return render_template("index.html")
