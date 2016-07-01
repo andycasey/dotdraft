@@ -6,7 +6,7 @@
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 
-__all__ = ["trigger_event"]
+__all__ = ["webhook"]
 
 import json
 import logging
@@ -414,7 +414,7 @@ def copy_previous_manuscript(repository_path, before_hash, manuscript_basename):
     return os.path.join(repository_path, before_basename)
 
 
-def trigger_event(request):
+def webhook(request):
     """
     Method to run when GitHub has triggered an event on a repository.
 
@@ -422,10 +422,11 @@ def trigger_event(request):
         A WSGI request, which might have come from GitHub.
     """
 
+    print("Received request: {}".format(request))
+
     # Check the request is from GitHub, otherwise do nothing.
     if not is_valid_github_request(request):
         return False
-
 
     status_context = ".draft/revisions"
     on_pull_request = (request.META["HTTP_X_GITHUB_EVENT"] == "pull_request")

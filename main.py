@@ -11,5 +11,5 @@ def root():
 @app.route("/", methods=["POST", ])
 def recieve_payload():
    print("Doing stuff")
-   if not dotdraft.trigger_payload(request):
+   if not dotdraft.webhook(request):
        return render_template("index.html")
