@@ -657,8 +657,16 @@ def webhook(request, database=None, **kwargs):
             pr_response(**pr_kwds)
             return None
             
+        warning_message \
+            =   "\n\n\n"\
+                "**Warning:** The link to the compiled PDF from `.draft` is "\
+                "**not** persistent and will expire in two weeks. Please set"\
+                " up `.draft` with a free Postgres database to enable "\
+                "persistent links."
     else:
+        warning_message = ""
         raise NotImplementedError("db not set up yet")
+
 
 
     # Code here is only executed if we have a target_url and the PDF was stored
@@ -673,18 +681,15 @@ def webhook(request, database=None, **kwargs):
         })
         pr_response(**pr_kwds)
 
-        if database is None:
-            gh.issues.comments.create(pull_request,
-                "**Warning:** The link to the compiled PDF from `.draft` is "\
-                "**not** persistent and will expire in two weeks. Please set"\
-                " up `.draft` with a free Postgres database to enable "\
-                "persistent links.",
+        if warning_message is not None and warning_message != "":
+            gh.issues.comments.create(pull_request, warning_message.lstrip(),
                 user=owner, repo=payload["repository"]["name"])
 
     else:
         comment_payload["body"] \
             =   "`.draft`: Compiled a PDF highlighting differences from {} to "\
-                "{}: [{}]({})".format(base_sha[:8], head_sha[:8], uri, target_url)
+                "{}: [{}]({}){}".format(
+                    base_sha[:8], head_sha[:8], uri, target_url, warning_message)
         comment_response(comment_payload, **commit_kwds)
 
     return True
