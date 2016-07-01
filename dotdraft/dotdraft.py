@@ -576,8 +576,8 @@ def webhook(request, database=None, **kwargs):
     if on_pull_request and success:
         commit.create_status("success", 
             target_url=target_url,
-            description="compiled a PDF showing differences from {} to {}"\
-                .format(base_sha[:4], head_sha[:4]),
+            description="compiled a PDF highlighting differences from {} to {}"\
+                .format(base_sha[:10], head_sha[:10]),
             context=status_context)
 
         if database is None:
