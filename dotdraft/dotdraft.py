@@ -86,7 +86,7 @@ def is_valid_github_request(request):
         "HTTP_X_GITHUB_DELIVERY": None
     }
     for key, acceptable_values in required_meta_headers.items():
-        print(key, request.META, acceptable_values)
+        print("Check", key, request.META, acceptable_values)
         
         # Only a key required?
         if key not in request.META:
@@ -434,6 +434,8 @@ def webhook(request):
     on_pull_request = (request.META["HTTP_X_GITHUB_EVENT"] == "pull_request")
 
     payload = request.body
+    print("is_pr", on_pull_request, payload)
+
     if not isinstance(payload, dict): payload = json.loads(payload)
 
 
