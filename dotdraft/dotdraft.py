@@ -283,7 +283,8 @@ def latexdiff(old_path, new_path, **kwargs):
 
     # Execute latexdiff given some acceptable keywords.
     # TODO: allow keywords to get passed through here.
-    command = './app/latexdiff "{}" "{}" > "{}"'.format(old_path, new_path, diff_path)
+    command = './dotdraft/latexdiff "{}" "{}" > "{}"'.format(
+        old_path, new_path, diff_path)
     logging.debug("latexdiff command: {}".format(command))
 
     try:
