@@ -135,7 +135,7 @@ def oauth_callback():
         cursor.execute("DELETE FROM oauth_states WHERE state = %s", (state, ))
 
         # Create a new user.
-        print("response is", r, r.text, r.__dict__)        
+        print("response is", r, r.text, r.json, r.__dict__)        
 
         cursor.close()
         get_database().commit()
