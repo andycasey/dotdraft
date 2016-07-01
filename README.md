@@ -6,12 +6,21 @@
 ![Built at #dotastro](http://img.shields.io/badge/Built%20at-%23dotastro-blue.svg?style=flat)
 
 
+Example
+-------
+
+[example gif showing how it works]
+
+
+**Live demo** -- a link to a PR with this enabled.
+
+
 How does it work?
 -----------------
 
-Once you've added a webhook to get `.draft` running on your repository, here's what happens:
+Once you've set up `.draft` to run on your repository, here's what happens:
 
-0. GitHub will alert `.draft` when you push a commit or open a pull request.
+0. GitHub will alert `.draft` when you push a commit or open a pull request
 
 1. `.draft` will clone your repository
 
@@ -22,20 +31,6 @@ Once you've added a webhook to get `.draft` running on your repository, here's w
 4. A `latexdiff` is run against the base and head versions and a PDF is compiled that highlights the changes made
 
 5. `.draft` comments back on the commit or pull request with a link to the compiled PDF
-
-6. ???
-
-7. Profit!
-
-
-Example
--------
-
-[example gif showing how it works]
-
-
-**Live demo** -- a link to a PR with this enabled.
-
 
 
 Setting up your repository with `.draft`
