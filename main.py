@@ -114,7 +114,7 @@ def oauth_callback():
     cursor = get_database().cursor()
     cursor.execute(
         "SELECT ip_address, created FROM oauth_states WHERE state = %s",
-        (request.args.get("state", None)))
+        (request.args.get("state", None), ))
     results = cursor.fetchone()
 
     print("res", results)
