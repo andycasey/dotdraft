@@ -479,6 +479,7 @@ def webhook(request, database=None, **kwargs):
 
         # Create the payload for comment that will go back to GitHub.
         comment_response = gh.repos.commits.create_comment
+        print(json.dumps(payload, indent=4))
         comment_payload = {
             "commit_id": head_sha,
             "path": os.path.basename(head_path),
