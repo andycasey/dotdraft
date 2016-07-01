@@ -442,6 +442,8 @@ def webhook(request, database=None, **kwargs):
 
     payload = json.loads(request.get_data())
     pull_request = payload.get("number", 0)
+    repo = payload["repository"]["name"]
+    owner = payload["repository"]["owner"]["login" if pull_request else "name"]
 
     # TODO: Log the valid request in the DB
 
@@ -465,11 +467,11 @@ def webhook(request, database=None, **kwargs):
 
     else:
         logging.info("Webhook triggered by commit(s)")
-
+        
 
     # Authenticate with GitHub.
     gh = pygithub.Github(token=GH_TOKEN)
-    repo = payload["repository"]["name"]
+    
 
     # Run the difference between two LaTeX files.
     if not pull_request:
@@ -485,7 +487,6 @@ def webhook(request, database=None, **kwargs):
 
         # Create the payload for comment that will go back to GitHub.
         comment_response = gh.repos.commits.create_comment
-        owner = payload["repository"]["owner"]["name"]
         paths = payload["commits"][-1]["added"] + payload["commits"][-1]["modified"]
         
         print(payload)
@@ -587,7 +588,6 @@ def webhook(request, database=None, **kwargs):
         base_sha = payload["pull_request"]["base"]["sha"]
         logging.debug("Comparing SHAs {} with {}".format(base_sha, head_sha))
 
-        owner = payload["repository"]["owner"]["login"]
         uri = "{owner}.{repo}.{issue}.pdf".format(
             owner=owner, repo=repo, issue=payload["number"])
 
