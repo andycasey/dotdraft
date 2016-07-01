@@ -9,7 +9,7 @@ CREATE TABLE oauth_states (
     created timestamp without time zone
 );
 ALTER TABLE oauth_states ALTER created SET default now();
-
+ALTER TABLE oauth_states ADD CONSTRAINT unique_state UNIQUE (state);
 
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (

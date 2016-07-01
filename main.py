@@ -78,11 +78,9 @@ def oauth_redirect():
     state = dotdraft.utils.random_string(1024)
     connection = get_database()
     cursor = connection.cursor()
-    r = cursor.execute(
+    cursor.execute(
         "INSERT INTO oauth_states (state, ip_address) VALUES (%s, %s)",
         (state, request.remote_addr))
-
-    print("signup r", r)
     cursor.close()
     connection.commit()
 
@@ -99,7 +97,6 @@ def oauth_redirect():
 
     url = "https://github.com/login/oauth/authorize?{}".format(urlencode(data))
 
-    print(data)
     logging.info("Redirecting to {}".format(url))
 
     return redirect(url)
@@ -112,6 +109,18 @@ def oauth_callback():
 
     See https://developer.github.com/v3/oauth/
     """
+
+    # Do we have this state?
+    cursor = get_database().cursor()
+    cursor.execute(
+        "SELECT ip_address, created FROM oauth_states WHERE state = %s",
+        (request.args.get("state", None)))
+    results = cursor.fetchone()
+
+    print("res", results)
+
+
+
 
     assert request.args.get("state") == "not-for-production"
 
