@@ -536,17 +536,19 @@ def webhook(request, database=None, status_context=".draft/revisions"):
         if database is None:
             logging.warn("No database supplied. Using transfer.sh instead..")
 
-                upload_response = requests.put(
-                    url="https://transfer.sh/{}".format(uri),
-                    data=open(compiled_diff, "rb"))
+            upload_response = requests.put(
+                url="https://transfer.sh/{}".format(uri),
+                data=open(compiled_diff, "rb"))
 
-                if upload_response.status_code == 200:
-                    target_url = response.text.strip()
+            if upload_response.status_code == 200:
+                target_url = response.text.strip()
+                logging.info("Compiled PDF uploaded successfully to {}".format(
+                    target_url))
 
-                else:
-                    target_url = HEROKU_URL # TODO
-                    logger.warn("Upload failed: {}".format(
-                        upload_response.status_code))
+            else:
+                target_url = HEROKU_URL # TODO
+                logging.warn("Upload failed: {}".format(
+                    upload_response.status_code))
 
 
         else:
