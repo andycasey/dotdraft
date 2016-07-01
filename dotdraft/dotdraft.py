@@ -542,11 +542,12 @@ def webhook(request, database=None, status_context=".draft/revisions"):
                 data=open(compiled_diff, "rb"))
 
             if upload_response.status_code == 200:
-                target_url = response.text.strip()
+                target_url = upload_response.text.strip()
                 logging.info("Compiled PDF uploaded successfully to {}".format(
                     target_url))
 
             else:
+                # Send back failed response to GitHub integrations #TODO
                 target_url = HEROKU_URL # TODO
                 logging.warn("Upload failed: {}".format(
                     upload_response.status_code))
@@ -556,7 +557,9 @@ def webhook(request, database=None, status_context=".draft/revisions"):
             raise NotImplementedError("db not set up yet")
 
 
-    else:
+    # We use this instead of else because a failure to upload the PDF is still
+    # a failure overall.
+    if not success:
         target_url = HEROKU_URL # TODO
         message =   "Something went wrong when trying to compile the PDF "\
                     "between `{}` and `{}`:\n\n"\
