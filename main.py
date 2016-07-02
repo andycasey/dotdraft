@@ -69,10 +69,9 @@ def authentication_required(f):
         # Get the user.
         g.user = gh.Github(login_or_token=token).get_user()
 
-        print("user is ", g.user)
-
         return f(*args, **kwargs)
     return decorated_function
+
 
 # ROUTING
 
@@ -85,8 +84,7 @@ def root():
 @app.route("/login")
 @authentication_required
 def login():
-    print("in login", g.user)
-    return "hi {}".format(g.user)
+    return "hi {}".format(g.user.name)
 
 
 
