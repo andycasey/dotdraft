@@ -182,25 +182,34 @@ def oauth_callback():
 
         payload = r.json()
 
-        session["access_token"] = payload["access_token"]
-
         # Need to know who this user is.
         user = gh.Github(login_or_token=payload["access_token"]).get_user()
         primary_email_address \
             = [item["email"] for item in user.get_emails() if item["primary"]][0]
 
         # Create a new user?
-        print("tokebn", payload["access_token"])
-        cursor.execute("SELECT id, email FROM users WHERE token = %s",
-            (payload["access_token"], ))
+        user_id = cursor.execute(
+            "SELECT id FROM users WHERE email = %s", (primary_email_address, ))
+        user_id = cursor.fetchone()
 
-        if cursor.rowcount == 0:
+        if user_id is None:
+            # Create new user.
+            logging.info("Creating new user: {}".format(primary_email_address))
+
             cursor.execute(
                 "INSERT INTO users (email, token, scope) VALUES (%s, %s, %s)",
                 (primary_email_address, payload["access_token"], payload["scope"]))
 
         else:
-            print("User auth'd as {}".format(cursor.fetchone()))
+            # Update existing token.
+            logging.info(
+                "User ({}) known. Updating token.".format(primary_email_address))
+
+            cursor.execute(
+                "UPDATE users SET token = %s WHERE id = %s",
+                (payload["access_token"], user_id[0]))
+
+        session["access_token"] = payload["access_token"]
 
         # Delete the state, since we no longer need it.
         cursor.execute("DELETE FROM oauth_states WHERE state = %s", (state, ))
