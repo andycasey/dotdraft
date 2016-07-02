@@ -388,7 +388,7 @@ class Revision(object):
         # Check if the request is valid.
         if "HTTP_X_GITHUB_DELIVERY" not in self._request.environ \
         or self._request.environ.get("HTTP_X_GITHUB_EVENT", None) \
-        not in ("pull_request", "push":
+        not in ("pull_request", "push"):
             return False
 
         return True
