@@ -539,14 +539,29 @@ class Revision(object):
         manuscript_diff = latexdiff(base_path, head_path, **settings)
 
         # Compile the manuscript_diff file.
-        # Copy the ulem.sty file into that dir first.
+        # Copy the ulem.sty file into that dir first. # TODO
         os.system("cp {0} {1}/{0}".format("ulem.sty", os.path.dirname(manuscript_diff)))
         compiled_diff, stdout, stderr = latex(manuscript_diff, **settings)
 
         # Save the compiled_diff, stdout and stderr to the database as a new
         # build and return the build id.
+        try:
+            with open(compiled_diff, "rb") as fp:
+                pdf_contents = fp.read()
 
+        except OSError:
+            pdf_contents = None
 
+        cursor = self._database.cursor()
+        cursor.execute(
+            """ UPDATE  builds
+                SET     stdout = %s,
+                        stderr = %s,
+                        pdf = %s
+                WHERE   id = %s""",
+                (stdout, stderr, pdf_contents, build_id))
+        cursor.close()
+        
         target_url = "{}/build/{}".format(home_url, build_id)
         if os.path.exists(compiled_diff):
             state = "success"
