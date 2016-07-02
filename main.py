@@ -6,7 +6,6 @@ import os
 import psycopg2 as pg
 import urlparse
 from flask import Flask, g, make_response, redirect, render_template, request
-from StringIO import StringIO
 from urllib import urlencode
 
 import dotdraft
@@ -215,11 +214,43 @@ def pdf(build_id):
             build_id, state))
         return (render_template("404.html"), 404)
 
-    print("binary", type(binary_pdf))
     response = make_response(str(binary_pdf))
     response.headers["Content-Type"] = "application/pdf"
     response.headers["Content-Disposition"] \
         = "inline; filename={}.pdf".format(build_id)
 
     # TODO: return a more useful PDF name.
+
     return response
+
+
+@app.route("/build/<build_id>")
+def show_build(build_id):
+    """
+    Show the state and logs related to a given build.
+
+    :param build_id:
+        The identifier of the build.
+    """
+
+    try:
+        build_id = int(build_id)
+
+    except (TypeError, ValueError):
+        return (render_template("404.html"), 404)
+
+
+    cursor = get_database().cursor()
+    cursor.execute("SET bytea_output TO escape;")
+    cursor.execute(
+        """SELECT state, stdout, stderr FROM builds WHERE id = %s""",
+        (build_id, ))
+
+    if not cursor.rowcount:
+        cursor.close()
+        return (render_template("404.html"), 404)
+
+    state, stdout, stderr = cursor.fetchone()
+
+    return render_template("build.html", build_id=build_id, state=state,
+        stdout=stdout, stderr=stderr)

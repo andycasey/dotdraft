@@ -573,7 +573,7 @@ class Revision(object):
 
         else:
             state = "failure"
-            target_url = "{}/build/{}.log".format(home_url, build_id)
+            target_url = "{}/build/{}".format(home_url, build_id)
         
             description \
                 =   "failed to compile PDF from {} to {}".format(
