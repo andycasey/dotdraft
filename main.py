@@ -13,7 +13,8 @@ from flask import \
 import dotdraft
 
 app = Flask(__name__)
-app.secret_key = os.urandom(128)
+#app.secret_key = os.urandom(128)
+app.secret_key = "my pretty"
 
 def get_database():
     """ Get a database connection for the application, if there is context. """
@@ -54,6 +55,26 @@ def close_connection(exception):
 @app.route("/")
 def root():
     return render_template("index.html") 
+
+
+@app.route("/login")
+def login():
+    # Check that there is an access token match in the database.
+    token = session.get("access_token", None)
+    if token is not None:
+        cursor = get_database().cursor()
+        cursor.execute("SELECT id, email FROM users WHERE token = %s", (token, ))
+        r = cursor.fetchone()
+        cursor.close()
+
+    if token is None or r is None:
+        # redirect to github auth dance
+        return "redicurect to gh auth"
+
+    user_id, user_email = r
+
+    return "hi {}".format(user_email)
+
 
 
 #@app.route("/event", methods=["POST"])
@@ -257,4 +278,4 @@ def show_build(build_id):
     state, stdout, stderr = cursor.fetchone()
 
     return render_template("build.html", build_id=build_id, state=state,
-        stdout=stdout, stderr=stderr, token=session.get("access_token", None))
+        stdout=stdout, stderr=stderr)
