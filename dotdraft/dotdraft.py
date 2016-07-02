@@ -619,8 +619,7 @@ class Revision(object):
             base_path = copy_previous_manuscript(
                 repository_path, base_sha, manuscript_basename)
         
-        return (base_sha, head_sha, base_path, head_path, {})
-
+        return (base_sha, head_sha, base_path, head_path)
 
 
 
