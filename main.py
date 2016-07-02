@@ -6,6 +6,7 @@ import os
 import psycopg2 as pg
 import urlparse
 from flask import Flask, g, make_response, redirect, render_template, request
+from StringIO import StringIO
 from urllib import urlencode
 
 import dotdraft
@@ -215,7 +216,7 @@ def pdf(build_id):
         return (render_template("404.html"), 404)
 
     print("binary", type(binary_pdf))
-    response = make_response(binary_pdf)
+    response = make_response(StringIO(result))
     response.headers["Content-Type"] = "application/pdf"
     response.headers["Content-Disposition"] \
         = "inline; filename={}.pdf".format(build_id)
