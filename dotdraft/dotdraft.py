@@ -525,7 +525,7 @@ class Revision(object):
         home_url = os.environ["HEROKU_URL"]
         
         # Get the comparisons.
-        base_sha, head_sha, base_path, head_path = self._get_comparison()
+        base_sha, head_sha, base_path, head_path, settings = self._compare()
 
         if head_path is None and head_sha is None:
             return ("success", "No manuscript found: no PDF produced", home_url)
@@ -568,7 +568,7 @@ class Revision(object):
 
 
 
-    def _get_comparison(self):
+    def _compare(self):
 
         payload = self._payload
 
@@ -593,7 +593,7 @@ class Revision(object):
                                 or get_manuscript_path(base_repository)
 
             if manuscript_basename is None:
-                return (None, None, None, None)
+                return (None, None, None, None, settings)
 
             # Get the paths.
             base_path = os.path.join(base_repository, manuscript_basename)
@@ -619,7 +619,7 @@ class Revision(object):
 
             if base_sha is None:
                 logging.info("No base SHA found; nothing to do.")
-                return (None, head_sha, None, None)
+                return (None, head_sha, None, None, settings)
 
                 
             # What is the name of the manuscript?
@@ -628,14 +628,14 @@ class Revision(object):
 
             if manuscript_basename is None:
                 logging.info("No manuscript found.")
-                return (None, None, None, None)
+                return (None, None, None, None, settings)
     
             # base = original; head = changed
             head_path = os.path.join(repository_path, manuscript_basename)
             base_path = copy_previous_manuscript(
                 repository_path, base_sha, manuscript_basename)
         
-        return (base_sha, head_sha, base_path, head_path)
+        return (base_sha, head_sha, base_path, head_path, settings)
 
 
 
