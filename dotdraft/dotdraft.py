@@ -563,15 +563,18 @@ class Revision(object):
                 (stdout, stderr, pdf_contents, build_id))
         cursor.close()
 
-        target_url = "{}/build/{}".format(home_url, build_id)
         if os.path.exists(compiled_diff):
             state = "success"
+            target_url = "{}/pdf/{}.pdf".format(home_url, build_id)
+        
             description \
                 =   "compiled a PDF highlighting differences from {} to {}"\
                         .format(base_sha[:8], head_sha[:8])
 
         else:
             state = "failure"
+            target_url = "{}/build/{}.log".format(home_url, build_id)
+        
             description \
                 =   "failed to compile PDF from {} to {}".format(
                         base_sha[:8], head_sha[:8])

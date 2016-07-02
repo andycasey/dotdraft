@@ -5,7 +5,7 @@ import requests
 import os
 import psycopg2 as pg
 import urlparse
-from flask import Flask, g, redirect, render_template, request
+from flask import Flask, g, make_response, redirect, render_template, request
 from urllib import urlencode
 
 import dotdraft
@@ -181,13 +181,43 @@ def oauth_callback():
         return (render_template("500.html"), 500)
 
 
-@app.route("/pdf/<basename>")
-def retrieve_pdf(basename):
+@app.route("/pdf/<build_id>.pdf")
+def pdf(build_id):
     """
     Serve a stored PDF from the database.
 
-    :param basename:
-        A unique basename (e.g., <owner>.<repo>.<issue>.pdf)
+    :param build_id:
+        The identifier of the build.
     """
 
-    return None
+    try:
+        build_id = int(build_id)
+
+    except (TypeError, ValueError):
+        # Nah mate.
+        return (render_template("404.html"), 404)
+
+
+    cursor = get_database().cursor()
+    cursor.execute("SELECT state, pdf FROM builds WHERE id = %s", (build_id, ))
+
+    if not cursor.rowcount:
+        cursor.close()
+        return (render_template("404.html"), 404)
+
+    state, binary_pdf = cursor.fetchone()
+    cursor.close()
+
+    if state != "success":
+        logging.info("State of build {} is {}. Returning 404".format(
+            build_id, state))
+        return (render_template("404.html"), 404)
+
+    response = make_response(binary_pdf)
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] \
+        = "inline; filename={}.pdf".format(build_id)
+
+    # TODO: return a more useful PDF name.
+    return response
+    
