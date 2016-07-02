@@ -285,7 +285,7 @@ def latex(path, timeout=30, **kwargs):
         stdout, and the stderr.
     """
 
-    commands = [kwargs["latex"], kwargs["latex"], kwargs["latex"]]
+    commands = [kwargs["latex"]]#, kwargs["latex"], kwargs["latex"]]
     for command in commands:
 
         p = subprocess.Popen([command], cwd=os.path.dirname(path),
@@ -462,6 +462,12 @@ class Revision(object):
             raise ValueError("state must be one of: {}".format(
                 ", ".join(available_states)))
 
+        # Update database with state.
+        cursor = self._database.cursor()
+        cursor.execute("UPDATE builds SET state = %s WHERE id = %s",
+            (state, self.build_id))
+        cursor.close()
+
         if state == "pending" and not self.pr:
             return False
 
@@ -473,28 +479,37 @@ class Revision(object):
         repository = gh.get_repo("/".join([self.owner, self.repo]))
             
         if self.pr:
-            pr = repository.get_pull(self.pr)
 
+            # Update status on pull request.
+            pr = repository.get_pull(self.pr)
             commit = deque(pr.get_commits(), maxlen=1).pop()
             commit.create_status(state, description=description, 
                 target_url=target_url, context=self._context)
 
-
         else:
             # Add comment to commit.
-            head_sha = self._payload.get("after", None)
-            if head_sha is None:
-                head_sha = self._payload["pull_request"]["head"]["sha"]
-
-            kwds = {} # Try without path/position.
-
-            body = "`.draft {}`: [{}]({})".format(state, description, target_url)
-
-            commit = repository.get_commit(head_sha)
-            commit.create_comment(body, **kwds)
+            commit = repository.get_commit(self._payload["after"])
+            commit.create_comment(
+                "`.draft {}`: [{}]({})".format(state, description, target_url))
 
         return True
 
+
+    @property
+    def build_id(self):
+
+        if not hasattr(self, "_build_id"):
+            cur = self._database.cursor()
+            cur.execute(
+                """ INSERT INTO builds (user_id, repo_id, state) 
+                    VALUES (0, 0, 'init') RETURNING id""")
+            build_id = cur.fetchone()[0]
+
+            self._database.commit()
+            cur.close()
+            self._build_id = build_id
+
+        return self._build_id
 
 
 
@@ -503,10 +518,12 @@ class Revision(object):
         Compile a PDF that highlights the differences in this revision.
         """
 
+        # Get a build ID.
+        build_id = self.build_id
+
+        self.set_state("pending")
         home_url = os.environ["HEROKU_URL"]
         
-        self.set_state("pending")
-
         # Get the comparisons.
         base_sha, head_sha, base_path, head_path = self._get_comparison()
 
@@ -519,20 +536,19 @@ class Revision(object):
         # Load the settings.
 
         # Run difftex on the before and after.
-        #manuscript_diff = git_utils.latexdiff(base_path, head_path, **settings)
+        manuscript_diff = git_utils.latexdiff(base_path, head_path, **settings)
 
         # Compile the manuscript_diff file.
         # Copy the ulem.sty file into that dir first.
-        #os.system("cp {0} {1}/{0}".format("ulem.sty", os.path.dirname(manuscript_diff)))
-        #compiled_diff, stdout, stderr = latex(manuscript_diff, **settings)
+        os.system("cp {0} {1}/{0}".format("ulem.sty", os.path.dirname(manuscript_diff)))
+        compiled_diff, stdout, stderr = latex(manuscript_diff, **settings)
 
         # Save the compiled_diff, stdout and stderr to the database as a new
         # build and return the build id.
 
-        build_id = -1
 
         target_url = "{}/build/{}".format(home_url, build_id)
-        if True: #os.path.exists(compiled_diff):
+        if os.path.exists(compiled_diff):
             state = "success"
             description \
                 =   "compiled a PDF highlighting differences from {} to {}"\

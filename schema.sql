@@ -24,13 +24,13 @@ ALTER TABLE users ADD COLUMN id BIGSERIAL PRIMARY KEY;
 
 
 
-
 DROP TABLE IF EXISTS builds;
 CREATE TABLE builds (
     user_id integer not null,
     repo_id integer not null,
-    stdout blob,
-    stderr blob,
-    diff_pdf blob,
+    state character(7),
+    stdout text,
+    stderr text,
+    pdf bytea
 );
 ALTER TABLE builds ADD COLUMN id BIGSERIAL PRIMARY KEY;
