@@ -366,7 +366,7 @@ class Revision(object):
 
     _context = ".draft"
     _default_description = {
-        "error": "Build failed. Please mention @andycasey",
+        "error": "Build failed. Please open an issue on andycasey/dotdraft",
         "pending": "Compiling PDF with changes highlighted",
         "success": "PDF compiled successfully",
         "failure": "Could not compile the PDF"

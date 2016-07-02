@@ -74,7 +74,8 @@ def trigger_event():
         # stdout, stderr
         logging.exception("Failed to build")
 
-        revision.set_state("error")
+        revision.set_state("error",
+            target_url="https://github.com/andycasey/dotdraft/issues/new")
 
     else:
         # Update the state / add a comment on the commit.
