@@ -199,6 +199,7 @@ def pdf(build_id):
 
 
     cursor = get_database().cursor()
+    cursor.execute("SET bytea_output TO escape;")
     cursor.execute("SELECT state, pdf FROM builds WHERE id = %s", (build_id, ))
 
     if not cursor.rowcount:
@@ -213,6 +214,7 @@ def pdf(build_id):
             build_id, state))
         return (render_template("404.html"), 404)
 
+    print("binary", type(binary_pdf))
     response = make_response(binary_pdf)
     response.headers["Content-Type"] = "application/pdf"
     response.headers["Content-Disposition"] \
@@ -220,4 +222,3 @@ def pdf(build_id):
 
     # TODO: return a more useful PDF name.
     return response
-    
