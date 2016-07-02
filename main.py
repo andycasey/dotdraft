@@ -9,7 +9,7 @@ from functools import wraps
 from urllib import urlencode
 
 from flask import \
-    (Flask, g, make_response, redirect, render_template, request, session)
+    (Flask, g, make_response, redirect, render_template, request, session, url_for)
 
 import dotdraft
 
@@ -64,7 +64,7 @@ def authentication_required(f):
 
         if token is None or r is None:
             print("token is ", token)
-            return redirect(url_for("signup", next=request.url))
+            return redirect("/signup")
 
         # Get the user.
         g.user = gh.Github(login_or_token=token).get_user()
