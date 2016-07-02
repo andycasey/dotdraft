@@ -547,7 +547,7 @@ class Revision(object):
         # build and return the build id.
         try:
             with open(compiled_diff, "rb") as fp:
-                pdf_contents = fp.read().decode('utf8').encode('utf8')
+                pdf_contents = pg.Binary(fp.read())
 
         except OSError:
             pdf_contents = None
