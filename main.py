@@ -5,6 +5,7 @@ import requests
 import os
 import psycopg2 as pg
 import urlparse
+from functools import wraps
 from urllib import urlencode
 
 from flask import \
@@ -50,6 +51,26 @@ def close_connection(exception):
 
 
 
+def authentication_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = session.get("access_token", None)
+        if token is not None:
+            cursor = get_database().cursor()
+            cursor.execute(
+                "SELECT id, email FROM users WHERE token = %s", (token, ))
+            r = cursor.fetchone()
+            cursor.close()
+
+        if token is None or r is None:
+            return redirect("/signup")
+
+        # Get the user.
+        g.user = gh.Github(login_or_token=token).get_user()
+
+        return f(*args, **kwargs)
+    return decorated_function
+
 # ROUTING
 
 @app.route("/")
@@ -57,23 +78,11 @@ def root():
     return render_template("index.html") 
 
 
+
 @app.route("/login")
+@authentication_required
 def login():
-    # Check that there is an access token match in the database.
-    token = session.get("access_token", None)
-    if token is not None:
-        cursor = get_database().cursor()
-        cursor.execute("SELECT id, email FROM users WHERE token = %s", (token, ))
-        r = cursor.fetchone()
-        cursor.close()
-
-    if token is None or r is None:
-        # redirect to github auth dance
-        return "redicurect to gh auth"
-
-    user_id, user_email = r
-
-    return "hi {}".format(user_email)
+    return "hi {}".format(g.user)
 
 
 
