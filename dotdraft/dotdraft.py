@@ -6,7 +6,7 @@
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 
-
+import github 
 import json
 import logging
 import os
@@ -19,25 +19,10 @@ from collections import deque
 from re import search as re_search
 from tempfile import mkdtemp
 
-# This is so dumb.
-import github 
-#import pygithub3 as pygithub
-
 from . import utils
 
-GH_TOKEN = os.environ["GH_TOKEN"]
-HEROKU_URL = os.environ["HEROKU_URL"] # There must be a better way..
-
-# General utilities.
-class Alarm(Exception):
-    pass
-
-def alarm_handler(signum, frame):
-    raise Alarm
 
 
-
-# Specific methods.
 def git(command, cwd=None, shell=True, **kwargs):
     """
     Execute a git command (e.g., git `command`).
@@ -64,8 +49,6 @@ def git(command, cwd=None, shell=True, **kwargs):
 
     else:
         return result
-
-
 
 
 def get_commit_comparisons(payload, repository_path=None):
@@ -267,9 +250,6 @@ def latexdiff(old_path, new_path, **kwargs):
         raise
 
     else:
-        print("diff path", diff_path)
-        os.system("cat {}".format(diff_path))
-        print("k done moarhax pls")
         return diff_path
 
 
@@ -294,7 +274,7 @@ def latex(path, timeout=30, **kwargs):
             stderr=subprocess.PIPE, shell=True)
 
         if timeout != -1:
-            signal.signal(signal.SIGALRM, alarm_handler)
+            signal.signal(signal.SIGALRM, utils.alarm_handler)
             signal.alarm(timeout)
 
         try:
@@ -306,7 +286,7 @@ def latex(path, timeout=30, **kwargs):
             if timeout != -1:
                 signal.alarm(0)
 
-        except Alarm:
+        except utils.Alarm:
 
             # process might have died before getting to this line
             # so wrap to avoid OSError: no such process
@@ -323,8 +303,6 @@ def latex(path, timeout=30, **kwargs):
         os.path.basename(os.path.extsep.join([base_path, "pdf"])))
 
     return (compiled_pdf, stdout, stderr)
-
-
 
 
 def copy_previous_manuscript(repository_path, before_hash, manuscript_basename):
@@ -354,7 +332,6 @@ def copy_previous_manuscript(repository_path, before_hash, manuscript_basename):
     while os.path.exists(os.path.join(repository_path, before_basename)):
         before_basename = "{}.tex".format(utils.random_string())
 
-    # TODO FAIL
     r = git("show {}:{} > {}".format(
             before_hash, os.path.basename(manuscript_basename), before_basename),
         cwd=repository_path)
@@ -375,17 +352,26 @@ class Revision(object):
 
 
     def __init__(self, request, database):
+        """
+        An object to represent the notification of a manuscript revision that
+        has been transmitted by GitHub.
+
+        :param request:
+            The webhook request from GitHub.
+
+        :param database:
+            The application database.
+        """
 
         self._request = request
         self._database = database
         self._payload = json.loads(request.get_data())
-
-
         return None
 
 
     @property
     def is_valid(self):
+        """ Return whether the revision appears to be valid. """
 
         # Check if the request is valid.
         if "HTTP_X_GITHUB_DELIVERY" not in self._request.environ \
@@ -398,6 +384,10 @@ class Revision(object):
 
     @property
     def is_expected(self):
+        """
+        Return whether we expected to receive these kinds of revision 
+        notifications from this repository.
+        """
 
         # Check to see if we expected this event.
         # (e.g., whether we have permission to post back and whether we should)
@@ -422,25 +412,30 @@ class Revision(object):
 
     @property
     def pr(self):
+        """ 
+        Return the pull request number associated with these revisions,
+        otherwise zero.
+        """
         return self._payload.get("number", 0)
 
 
     @property
     def repo(self):
+        """ Return the name of the associated repository. """
         return self._payload["repository"]["name"]
 
 
     @property
     def owner(self):
+        """ Return the name of the owner of this repository. """
         _ = "login" if self.pr else "name"
         return self._payload["repository"]["owner"][_]
 
 
-
-
     def set_state(self, state, description=None, target_url=None):
         """
-        Set the GitHub state for the source of this event.
+        Set the state for the source of this event, and communicate that state
+        to GitHub.
 
         :param state:
             Must be one of either: pending, error, success, or failure.
@@ -478,9 +473,8 @@ class Revision(object):
         # Authenticate with GitHub
         gh = github.Github(login_or_token=self.token)
         repository = gh.get_repo("/".join([self.owner, self.repo]))
-            
+        
         if self.pr:
-
             # Update status on pull request.
             pr = repository.get_pull(self.pr)
             commit = deque(pr.get_commits(), maxlen=1).pop()
@@ -498,6 +492,7 @@ class Revision(object):
 
     @property
     def build_id(self):
+        """ Create or return a unique identifier for this build. """
 
         if not hasattr(self, "_build_id"):
             cur = self._database.cursor()
@@ -546,12 +541,12 @@ class Revision(object):
 
         # Save the compiled_diff, stdout and stderr to the database as a new
         # build and return the build id.
-        try:
+        if os.path.exists(compiled_diff):
             with open(compiled_diff, "rb") as fp:
-                pdf_contents = pg.Binary(fp.read())
+                pdf_contents = fp.read()
 
-        except OSError:
-            pdf_contents = None
+        else:
+            pdf_contents = ""
 
         cursor = self._database.cursor()
         cursor.execute(
@@ -560,7 +555,7 @@ class Revision(object):
                         stderr = %s,
                         pdf = %s
                 WHERE   id = %s""",
-                (stdout, stderr, pdf_contents, build_id))
+                (stdout, stderr, pg.Binary(pdf_contents), build_id))
         cursor.close()
 
         if os.path.exists(compiled_diff):
@@ -588,6 +583,10 @@ class Revision(object):
 
 
     def _compare(self):
+        """
+        Get the SHA and paths of the base and head manuscripts, as well as the
+        repository settings.
+        """
 
         payload = self._payload
 
@@ -655,287 +654,4 @@ class Revision(object):
                 repository_path, base_sha, manuscript_basename)
         
         return (base_sha, head_sha, base_path, head_path, settings)
-
-
-
-def webhook(request, database=None, **kwargs):
-    """
-    Method to run when GitHub has triggered an event on a repository.
-
-    :param request:
-        A WSGI request, which might have come from GitHub.
-
-    :param database: [optional]
-        A Postgres database to store compiled PDFs in. If `None` is supplied,
-        then files will be uploaded to a temporary site.
-    """
-
-    status_context = kwargs.pop(
-        "status_context", ".draft")
-    pending_description = kwargs.pop(
-        "pending_description", "compiling your differenced PDF")
-
-    logging.info("Received webhook: {}".format(type(request)))
-
-    # Check the request is from GitHub, otherwise do nothing.
-    if not is_valid_github_request(request):
-        logging.info("Not valid GitHub request. Ignoring.")
-        return False
-
-    payload = json.loads(request.get_data())
-    pull_request = payload.get("number", 0)
-    repo = payload["repository"]["name"]
-    owner = payload["repository"]["owner"]["login" if pull_request else "name"]
-
-    # TODO: Log the valid request in the DB
-
-    # Update status to pending.
-    if pull_request and payload["pull_request"]["state"] == "open":
-
-        # Update status.
-        gh = github.Github(login_or_token=GH_TOKEN)
-        pr = gh.get_repo("/".join([owner, repo])).get_pull(pull_request)
-        commit = deque(pr.get_commits(), maxlen=1).pop()
-
-        commit.create_status("pending", target_url=HEROKU_URL,
-            description=pending_description, context=status_context)
-
-        logging.info("Updated status context on {}/{}/{}: {} - {}".format(
-            owner, repo, pull_request, status_context, pending_description))
-
-    elif pull_request:
-        logging.info("Webhook triggered by closed pull request. Ignoring.")
-        return None
-
-    else:
-        logging.info("Webhook triggered by commit(s)")
-        
-
-    # Authenticate with GitHub.
-    gh = pygithub.Github(token=GH_TOKEN)
-    
-
-    # Run the difference between two LaTeX files.
-    if not pull_request:
-
-        # Clone the repository.
-        repository_path = clone_repository(payload)
-
-        # Get the manuscript paths.
-        settings = load_settings(repository_path)
-
-        # Check the commit message for a previous SHA.
-        base_sha, head_sha = get_commit_comparisons(payload, repository_path)
-
-        # Create the payload for comment that will go back to GitHub.
-        comment_response = gh.repos.commits.create_comment
-        paths = payload["commits"][-1]["added"] + payload["commits"][-1]["modified"]
-        
-        print(payload)
-
-        comment_payload = {
-            "commit_id": head_sha,
-            "position": 1,
-            "line": 1,
-            "path": paths[0]
-        }
-        commit_kwds = {
-            "sha": head_sha,
-            "user": owner,
-            "repo": repo
-        }
-
-        if base_sha is None:
-            logging.info("No base SHA found; nothing to do.")
-
-            # We need a path file to compare against. So just get the first one
-            # from added/modified.
-            comment_payload.update({
-                "body": "`.draft`: No base commit found to compare against."
-            })
-            comment_response(comment_payload, **commit_kwds)
-            return None
-
-        # What is the name of the manuscript?
-        manuscript_basename =  settings.get("manuscript", None) \
-                            or get_manuscript_path(repository_path)
-
-        if manuscript_basename is None:
-            logging.info("No manuscript found.")
-            comment_payload.update({
-                "body": "`.draft`: No manuscript (`*.tex`) found in repository."
-            })
-            comment_response(comment_payload, **commit_kwds)
-            return None
-
-        else:
-            comment_payload["path"] = manuscript_basename
-
-        # base = original; head = changed
-        head_path = os.path.join(repository_path, manuscript_basename)
-        base_path = copy_previous_manuscript(
-            repository_path, base_sha, manuscript_basename)
-    
-        uri = "{owner}.{repo}.{base}..{head}.pdf".format(owner=owner,
-            repo=repo, base=base_sha[:8], head=head_sha[:8])
-
-
-    else:
-
-        pr_response = commit.create_status
-        pr_kwds = {
-            #"state"
-            #"description"
-            "target_url": HEROKU_URL,
-            "context": status_context,
-        }
-
-        # Pull request triggered the webhook.
-        logging.info("Comparing refs {} with {}".format(
-            payload["pull_request"]["base"]["ref"],
-            payload["pull_request"]["head"]["ref"]))
-        
-        # Clone the base and head repositories.
-        base_repository = clone_repository(
-            payload, payload["pull_request"]["base"]["ref"])
-
-        head_repository = clone_repository(
-            payload, payload["pull_request"]["head"]["ref"])
-
-        # Get the manuscript paths.
-        settings = load_settings(base_repository)
-
-        # What is the name of the manuscript?
-        manuscript_basename =  settings.get("manuscript", None) \
-                            or get_manuscript_path(base_repository)
-
-        if manuscript_basename is None:
-            logging.info("No manuscript found.")
-
-            pr_kwds.update({
-                "state": "success",
-                "description": "No manuscript found; skipped PDF creation."
-            })
-            pr_response(**pr_kwds)
-            return None
-
-
-        # Get the paths.
-        base_path = os.path.join(base_repository, manuscript_basename)
-        head_path = os.path.join(head_repository, manuscript_basename)
-        logging.debug("Comparing paths {} with {}".format(base_path, head_path))
-
-        # Keep the SHAs.
-        head_sha = payload["pull_request"]["head"]["sha"]
-        base_sha = payload["pull_request"]["base"]["sha"]
-        logging.debug("Comparing SHAs {} with {}".format(base_sha, head_sha))
-
-        uri = "{owner}.{repo}.{issue}.pdf".format(
-            owner=owner, repo=repo, issue=payload["number"])
-
-
-    # Run difftex on the before and after.
-    manuscript_diff = latexdiff(base_path, head_path, **settings)
-
-    # Compile the manuscript_diff file.
-    # Copy the ulem.sty file into that dir first.
-    os.system("cp {0} {1}/{0}".format("ulem.sty", os.path.dirname(manuscript_diff)))
-    compiled_diff, stdout, stderr = latex(manuscript_diff, **settings)
-
-    # Check things were OK.
-    if not os.path.exists(compiled_diff):
-        logging.warn("No compiled diff file found.")
-        
-
-        message =   "Something went wrong when trying to compile the PDF "\
-                    "between `{}` and `{}`:\n\n"\
-                    "````\n"\
-                    "{}"\
-                    "````\n".format(base_sha[:8], head_sha[:8], stdout)
-
-        if pull_request:
-            pr_kwds.update({
-                "state": "failure",
-                "description": "Failed to compile PDF. See error log."
-            })
-            pr_response(**pr_kwds)
-
-            # Comment on the PR.
-            gh.issues.comments.create(pull_request, message, 
-                user=owner, repo=payload["repository"]["name"])
-
-        else:
-            # Comment on the commit.
-            comment_payload["body"] = message
-            comment_response(comment_payload, **commit_kwds)
-            
-        return None
-
-
-    # Upload the PDF or store it.
-    logging.info("Created diff PDF successfully: {}".format(compiled_diff))
-    if database is None:
-        logging.warn("No database supplied. Using transfer.sh instead..")
-
-        upload_response = requests.put(
-            url="https://transfer.sh/{}".format(uri),
-            data=open(compiled_diff, "rb"))
-
-        if upload_response.status_code == 200:
-            target_url = upload_response.text.strip()
-            logging.info("Compiled PDF uploaded successfully to {}".format(
-                target_url))
-
-            # Depending on whether we are in a PR or not, the behaviour will be
-            # different on what to do with the target_url.
-
-        else:
-            logging.warn("Upload failed: {}".format(
-                upload_response.status_code))
-
-            pr_kwds.update({
-                "state": "failure",
-                "description": "Failed to upload compiled PDF [{}]".format(
-                    upload_response.status_code)
-            })
-            pr_response(**pr_kwds)
-            return None
-            
-        warning_message \
-            =   "\n\n\n"\
-                "**Warning:** The link to the compiled PDF from `.draft` is "\
-                "**not** persistent and will expire in two weeks. Please set"\
-                " up `.draft` with a free Postgres database to enable "\
-                "persistent links."
-    else:
-        warning_message = ""
-        raise NotImplementedError("db not set up yet")
-
-
-
-    # Code here is only executed if we have a target_url and the PDF was stored
-    # *somewhere* (either retrievable via database or from transfer.sh)
-    if pull_request:
-        pr_kwds.update({
-            "state": "success",
-            "target_url": target_url,
-            "description": \
-                "compiled a PDF highlighting differences from {} to {}"\
-                .format(base_sha[:8], head_sha[:8])
-        })
-        pr_response(**pr_kwds)
-
-        if warning_message is not None and warning_message != "":
-            gh.issues.comments.create(pull_request, warning_message.lstrip(),
-                user=owner, repo=payload["repository"]["name"])
-
-    else:
-        comment_payload["body"] \
-            =   "`.draft`: Compiled a PDF highlighting differences from {} to "\
-                "{}: [{}]({}){}".format(
-                    base_sha[:8], head_sha[:8], uri, target_url, warning_message)
-        comment_response(comment_payload, **commit_kwds)
-
-    return True
-
 

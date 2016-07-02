@@ -1,5 +1,4 @@
 requests==2.8.1
-pygithub3==0.5.1
 PyGithub
 flask==0.10.1
 gunicorn==19.4.5

@@ -34,3 +34,11 @@ def get_unused_filename(folder, suffix=None, N=10):
         basename = "".join([random_string(N=N), suffix])
 
     return os.path.join(folder, basename)
+
+
+# General utilities.
+class Alarm(Exception):
+    pass
+
+def alarm_handler(signum, frame):
+    raise Alarm
