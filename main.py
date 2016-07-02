@@ -1,17 +1,18 @@
 import json
 import logging
-import github
+import github as gh
 import requests
 import os
 import psycopg2 as pg
 import urlparse
-from flask import Flask, g, make_response, redirect, render_template, request
 from urllib import urlencode
+
+from flask import \
+    (Flask, g, make_response, redirect, render_template, request, session)
 
 import dotdraft
 
 app = Flask(__name__)
-
 
 def get_database():
     """ Get a database connection for the application, if there is context. """
@@ -46,12 +47,12 @@ def close_connection(exception):
     return None
 
 
+
 # ROUTING
 
 @app.route("/")
 def root():
     return render_template("index.html") 
-
 
 
 #@app.route("/event", methods=["POST"])
@@ -159,8 +160,10 @@ def oauth_callback():
 
         payload = r.json()
 
+        session["access_token"] = payload["access_token"]
+
         # Need to know who this user is.
-        user = github.Github(login_or_token=payload["access_token"]).get_user()
+        user = gh.Github(login_or_token=payload["access_token"]).get_user()
         primary_email_address \
             = [item["email"] for item in user.get_emails() if item["primary"]][0]
 
@@ -253,4 +256,4 @@ def show_build(build_id):
     state, stdout, stderr = cursor.fetchone()
 
     return render_template("build.html", build_id=build_id, state=state,
-        stdout=stdout, stderr=stderr)
+        stdout=stdout, stderr=stderr, token=session.get("access_token", None))
