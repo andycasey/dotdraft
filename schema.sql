@@ -20,3 +20,17 @@ CREATE TABLE users (
 );
 ALTER TABLE users ALTER created SET default now();
 ALTER TABLE users ADD CONSTRAINT unique_email UNIQUE (email);
+ALTER TABLE users ADD COLUMN id BIGSERIAL PRIMARY KEY;
+
+
+
+
+DROP TABLE IF EXISTS builds;
+CREATE TABLE builds (
+    user_id integer not null,
+    repo_id integer not null,
+    stdout blob,
+    stderr blob,
+    diff_pdf blob,
+);
+ALTER TABLE builds ADD COLUMN id BIGSERIAL PRIMARY KEY;

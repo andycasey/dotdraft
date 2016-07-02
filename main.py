@@ -53,19 +53,36 @@ def root():
     return render_template("index.html") 
 
 
-@app.route("/", methods=["POST", ])
-def recieve_payload():
-    logging.info("Receiving POST payload.")
 
+#@app.route("/event", methods=["POST"])
+@app.route("/", methods=["POST"])
+def trigger_event():
+    """ A webhook has been triggered from GitHub. """
+
+    database = get_database()
+
+    revision = dotdraft.Revision(request, database)
+    if not revision.is_valid or not revision.is_expected:
+        logging.info("Not valid or expected.")
+        return None
+
+    # OK, we are going to build it!
     try:
-        result = dotdraft.webhook(request)
-   
+        build_identifier = revision.build()
+
     except:
-        logging.exception("Exception occurred:")
-        return ("You can't always win.", 500)
+        # stdout, stderr
+        logging.exception("Failed to build")
 
-    return ("Everything is going to be OK.", 200)
+        revision.set_state("error")
 
+    else:
+        # Update the state / add a comment on the commit.
+        logging.info("Completed build {}".format(build_identifier))
+
+    database.commit()
+
+    return True
 
 
 @app.route("/signup")
@@ -163,3 +180,13 @@ def oauth_callback():
         return (render_template("500.html"), 500)
 
 
+@app.route("/pdf/<str:basename>")
+def retrieve_pdf(basename):
+    """
+    Serve a stored PDF from the database.
+
+    :param basename:
+        A unique basename (e.g., <owner>.<repo>.<issue>.pdf)
+    """
+
+    return None

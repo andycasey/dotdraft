@@ -21,7 +21,7 @@ from tempfile import mkdtemp
 
 # This is so dumb.
 import github 
-import pygithub3 as pygithub
+#import pygithub3 as pygithub
 
 from . import utils
 
@@ -66,37 +66,6 @@ def git(command, cwd=None, shell=True, **kwargs):
         return result
 
 
-def is_valid_github_request(request):
-    """
-    Check whether a HTTP request is a valid ping from GitHub.
-
-    :param request:
-        The Django WSGI request.
-    """
-
-    # Check the metadata headers.
-    required_meta_headers = {
-        "HTTP_X_GITHUB_EVENT": ("pull_request", "push"),
-        "HTTP_X_GITHUB_DELIVERY": None
-    }
-    for key, acceptable_values in required_meta_headers.items():
-        
-        # Only a key required?
-        if key not in request.environ:
-            logging.debug("Missing required header: {}".format(key))
-            return False
-
-        # Specific values are acceptable.
-        if  acceptable_values is not None \
-        and request.environ[key] not in acceptable_values:
-            logging.debug(
-                "Header key/value pair is unacceptable: {}/{} acceptable: {}"\
-                .format(key, request.environ[key], ", ".join(acceptable_values)))
-            return False
-
-    # Check the payload.
-    logging.info("Valid GitHub webhook detected.")
-    return True
 
 
 def get_commit_comparisons(payload, repository_path=None):
@@ -282,7 +251,7 @@ def latexdiff(old_path, new_path, **kwargs):
     # Generate a temporary unused path for the difference file.
     repository_path = os.path.dirname(old_path)
 
-    diff_path = get_unused_filename(repository_path, suffix=".diff.tex")
+    diff_path = utils.get_unused_filename(repository_path, suffix=".diff.tex")
 
     # Execute latexdiff given some acceptable keywords.
     # TODO: allow keywords to get passed through here.
@@ -356,30 +325,6 @@ def latex(path, timeout=30, **kwargs):
     return (compiled_pdf, stdout, stderr)
 
 
-def get_unused_filename(folder, suffix=None, N=10):
-    """
-    Get a temporary filename.
-
-    :param folder:
-        The folder.
-
-    :param suffix: [optional]
-        An optional suffix to add to the filename.
-
-    :param N: [optional]
-        Length of the basename (ignoring the suffix).
-
-    :returns:
-        The full path name.
-    """
-
-    suffix = suffix or ""
-
-    basename = "".join([utils.random_string(N=N), suffix])
-    while os.path.exists(os.path.join(folder, basename)):
-        basename = "".join([utils.random_string(N=N), suffix])
-
-    return os.path.join(folder, basename)
 
 
 def copy_previous_manuscript(repository_path, before_hash, manuscript_basename):
@@ -415,6 +360,266 @@ def copy_previous_manuscript(repository_path, before_hash, manuscript_basename):
         cwd=repository_path)
 
     return os.path.join(repository_path, before_basename)
+
+
+
+class Revision(object):
+
+    _context = ".draft"
+    _default_description = {
+        "error": "The build failed.",
+        "pending": "compiling PDF with changes highlighted",
+        "success": "PDF compiled successfully",
+        "failure": "could not compile the PDF"
+    }
+
+
+    def __init__(self, request, database):
+
+        self._request = request
+        self._database = database
+
+        return None
+
+
+    @property
+    def is_valid(self):
+
+        # Check if the request is valid.
+        if "HTTP_X_GITHUB_DELIVERY" not in self._request.environ \
+        or self._request.environ.get("HTTP_X_GITHUB_EVENT", None) \
+        not in ("pull_request", "push":
+            return False
+
+        return True
+
+
+    @property
+    def is_expected(self):
+
+        # Check to see if we expected this event.
+        # (e.g., whether we have permission to post back and whether we should)
+        payload = json.loads(request.get_data())
+        if payload.get("number", 0) and payload["pull_request"]["state"] != "open":
+            return False
+
+        return True if self.token is not None else False
+
+
+    @property
+    def token(self):
+        """ Access token for GitHub for this revision. """
+
+        cursor = self._database.cursor()
+        cursor.execute("SELECT token FROM users LIMIT 1")
+        token = None if cursor.rowcount == 0 else cursor.fetchone()[0]
+        cursor.close()
+
+        return token
+
+
+    @property
+    def pr(self):
+        return self._payload.get("number", 0)
+
+
+    @property
+    def repo(self):
+        return self._payload["repository"]["name"]
+
+
+    @property
+    def owner(self):
+        _ = "login" if self.pr else "name"
+        return self._payload["repository"]["owner"][_]
+
+
+
+
+    def set_state(self, state, description=None, target_url=None):
+        """
+        Set the GitHub state for the source of this event.
+
+        :param state:
+            Must be one of either: pending, error, success, or failure.
+
+        :param description: [optional]
+            The description for the state. If `None` is given, then the default
+            description for the `state` will be set.
+
+        :param target_url: [optional]
+            The URL to access more details about the state. If `None` is given
+            then the default application URL will be set.
+
+        :returns:
+            Boolean flag as to whether the state was changed.
+        """
+
+        state = state.strip().lower()
+        available_states = ("pending", "error", "success", "failure")
+        if state not in available_states:
+            raise ValueError("state must be one of: {}".format(
+                ", ".join(available_states)))
+
+        if state == "pending" and not self.pr:
+            return False
+
+        description = description or self._default_description[state]
+        target_url = target_url or os.environ("HEROKU_URL")
+
+        # Authenticate with GitHub
+        gh = github.Github(login_or_token=self.token)
+        repository = gh.get_repo("/".join([self.owner, self.repo]))
+            
+        if self.pr:
+            pr = repository.get_pull(self.pr)
+
+            commit = deque(pr.get_commits(), maxlen=1).pop()
+            commit.create_status(state, description=description, 
+                target_url=target_url, context=self._context)
+
+
+        else:
+            # Add comment to commit.
+            head_sha = self._payload.get("head", None)
+            if head_sha is None:
+                head_sha = self._payload["pull_request"]["head"]["sha"]
+
+            kwds = {} # Try without path/position.
+
+            body = "`.draft {}`: [{}]({})".format(state, description, target_url)
+
+            commit = repository.get_commit(head_sha)
+            commit.create_comment(body, **kwds)
+
+        return True
+
+
+
+
+    def build(self, **kwargs):
+        """
+        Compile a PDF that highlights the differences in this revision.
+        """
+
+        home_url = os.environ("HEROKU_URL")
+        
+        self.set_state("pending")
+
+        # Get the comparisons.
+        base_sha, head_sha, base_path, head_path = self._get_comparison()
+
+        if head_path is None and head_sha is None:
+            return ("success", "No manuscript found: no PDF produced", home_url)
+
+        elif base_path is None and base_sha is None:
+            return ("success", "No base SHA found: no PDF produced", home_url)
+
+        # Load the settings.
+
+        # Run difftex on the before and after.
+        #manuscript_diff = git_utils.latexdiff(base_path, head_path, **settings)
+
+        # Compile the manuscript_diff file.
+        # Copy the ulem.sty file into that dir first.
+        #os.system("cp {0} {1}/{0}".format("ulem.sty", os.path.dirname(manuscript_diff)))
+        #compiled_diff, stdout, stderr = latex(manuscript_diff, **settings)
+
+        # Save the compiled_diff, stdout and stderr to the database as a new
+        # build and return the build id.
+
+        build_id = -1
+
+        target_url = "{}/build/{}".format(home_url, build_id)
+        if True: #os.path.exists(compiled_diff):
+            state = "success"
+            description \
+                =   "compiled a PDF highlighting differences from {} to {}"\
+                        .format(base_sha[:8], head_sha[:8])
+
+        else:
+            state = "failure"
+            description \
+                =   "failed to compile PDF from {} to {}".format(
+                        base_sha[:8], head_sha[:8])
+
+        # Update the state.
+        self.set_state(state, description, target_url)
+
+        # Return the build ID.
+        return build_id
+
+
+
+    def _get_comparison(self):
+
+        payload = self._payload
+
+        if self.pr:
+            # Pull request triggered the webhook.
+            logging.info("Comparing refs {} with {}".format(
+                payload["pull_request"]["base"]["ref"],
+                payload["pull_request"]["head"]["ref"]))
+            
+            # Clone the base and head repositories.
+            base_repository = clone_repository(
+                payload, payload["pull_request"]["base"]["ref"])
+
+            head_repository = clone_repository(
+                payload, payload["pull_request"]["head"]["ref"])
+
+            # Get the manuscript paths.
+            settings = load_settings(base_repository)
+
+            # What is the name of the manuscript?
+            manuscript_basename =  settings.get("manuscript", None) \
+                                or get_manuscript_path(base_repository)
+
+            if manuscript_basename is None:
+                return (None, None, None, None)
+
+            # Get the paths.
+            base_path = os.path.join(base_repository, manuscript_basename)
+            head_path = os.path.join(head_repository, manuscript_basename)
+            logging.debug("Comparing paths {} with {}".format(base_path, head_path))
+
+            # Keep the SHAs.
+            head_sha = payload["pull_request"]["head"]["sha"]
+            base_sha = payload["pull_request"]["base"]["sha"]
+            logging.debug("Comparing SHAs {} with {}".format(base_sha, head_sha))
+
+
+        else:
+
+            # Clone the repository.
+            repository_path = clone_repository(payload)
+
+            # Get the manuscript paths.
+            settings = load_settings(repository_path)
+
+            # Check the commit message for a previous SHA.
+            base_sha, head_sha = get_commit_comparisons(payload, repository_path)
+
+            if base_sha is None:
+                logging.info("No base SHA found; nothing to do.")
+                return (None, head_sha, None, None)
+
+                
+            # What is the name of the manuscript?
+            manuscript_basename =  settings.get("manuscript", None) \
+                                or get_manuscript_path(repository_path)
+
+            if manuscript_basename is None:
+                logging.info("No manuscript found.")
+                return (None, None, None, None)
+    
+            # base = original; head = changed
+            head_path = os.path.join(repository_path, manuscript_basename)
+            base_path = copy_previous_manuscript(
+                repository_path, base_sha, manuscript_basename)
+        
+        return (base_sha, head_sha, base_path, head_path, {})
+
 
 
 
