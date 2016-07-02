@@ -189,10 +189,18 @@ def oauth_callback():
         primary_email_address \
             = [item["email"] for item in user.get_emails() if item["primary"]][0]
 
-        # Create a new user.
-        cursor.execute(
-            "INSERT INTO users (email, token, scope) VALUES (%s, %s, %s)",
-            (primary_email_address, payload["access_token"], payload["scope"]))
+        # Create a new user?
+        print("tokebn", payload["access_token"])
+        cursor.execute("SELECT id, email FROM users WHERE token = %s",
+            (payload["access_token"], ))
+
+        if cursor.rowcount == 0:
+            cursor.execute(
+                "INSERT INTO users (email, token, scope) VALUES (%s, %s, %s)",
+                (primary_email_address, payload["access_token"], payload["scope"]))
+
+        else:
+            print("User auth'd as {}".format(cursor.fetchone()))
 
         # Delete the state, since we no longer need it.
         cursor.execute("DELETE FROM oauth_states WHERE state = %s", (state, ))
