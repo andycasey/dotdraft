@@ -85,6 +85,7 @@ def root():
 @app.route("/login")
 @authentication_required
 def login():
+    print("in login", g.user)
     return "hi {}".format(g.user)
 
 
