@@ -180,7 +180,7 @@ def oauth_callback():
         return (render_template("500.html"), 500)
 
 
-@app.route("/pdf/<str:basename>")
+@app.route("/pdf/<basename>")
 def retrieve_pdf(basename):
     """
     Serve a stored PDF from the database.
