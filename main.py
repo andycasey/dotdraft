@@ -63,10 +63,13 @@ def authentication_required(f):
             cursor.close()
 
         if token is None or r is None:
-            return redirect("/signup")
+            print("token is ", token)
+            return redirect(url_for("signup", next=request.url))
 
         # Get the user.
         g.user = gh.Github(login_or_token=token).get_user()
+
+        print("user is ", g.user)
 
         return f(*args, **kwargs)
     return decorated_function
