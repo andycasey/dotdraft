@@ -64,7 +64,7 @@ def trigger_event():
     revision = dotdraft.Revision(request, database)
     if not revision.is_valid or not revision.is_expected:
         logging.info("Not valid or expected.")
-        return None
+        return ("", 200)
 
     # OK, we are going to build it!
     try:
@@ -82,7 +82,7 @@ def trigger_event():
 
     database.commit()
 
-    return True
+    return ("", 200)
 
 
 @app.route("/signup")

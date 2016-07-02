@@ -466,7 +466,7 @@ class Revision(object):
             return False
 
         description = description or self._default_description[state]
-        target_url = target_url or os.environ("HEROKU_URL")
+        target_url = target_url or os.environ["HEROKU_URL"]
 
         # Authenticate with GitHub
         gh = github.Github(login_or_token=self.token)
@@ -503,7 +503,7 @@ class Revision(object):
         Compile a PDF that highlights the differences in this revision.
         """
 
-        home_url = os.environ("HEROKU_URL")
+        home_url = os.environ["HEROKU_URL"]
         
         self.set_state("pending")
 
