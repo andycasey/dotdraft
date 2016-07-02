@@ -10,6 +10,7 @@ from __future__ import (division, print_function, absolute_import,
 import json
 import logging
 import os
+import psycopg2 as pg
 import requests
 import signal
 import subprocess
