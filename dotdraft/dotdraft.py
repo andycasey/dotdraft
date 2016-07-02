@@ -547,7 +547,7 @@ class Revision(object):
         # build and return the build id.
         try:
             with open(compiled_diff, "rb") as fp:
-                pdf_contents = fp.read()
+                pdf_contents = fp.read().decode('utf8').encode('utf8')
 
         except OSError:
             pdf_contents = None
@@ -561,7 +561,7 @@ class Revision(object):
                 WHERE   id = %s""",
                 (stdout, stderr, pdf_contents, build_id))
         cursor.close()
-        
+
         target_url = "{}/build/{}".format(home_url, build_id)
         if os.path.exists(compiled_diff):
             state = "success"
