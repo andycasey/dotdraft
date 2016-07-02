@@ -228,7 +228,7 @@ def oauth_callback():
         cursor.close()
         get_database().commit()
 
-        return render_template("oauth_success.html")
+        return redirect("/login")
 
     else:
         return (render_template("500.html"), 500)
