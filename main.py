@@ -13,6 +13,7 @@ from flask import \
 import dotdraft
 
 app = Flask(__name__)
+app.secret_key = os.urandom(128)
 
 def get_database():
     """ Get a database connection for the application, if there is context. """
