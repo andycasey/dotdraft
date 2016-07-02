@@ -377,6 +377,8 @@ class Revision(object):
 
         self._request = request
         self._database = database
+        self._payload = json.loads(request.get_data())
+
 
         return None
 
@@ -398,8 +400,8 @@ class Revision(object):
 
         # Check to see if we expected this event.
         # (e.g., whether we have permission to post back and whether we should)
-        payload = json.loads(request.get_data())
-        if payload.get("number", 0) and payload["pull_request"]["state"] != "open":
+        if  self._payload.get("number", 0) \
+        and self._payload["pull_request"]["state"] != "open":
             return False
 
         return True if self.token is not None else False
