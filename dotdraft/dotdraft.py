@@ -366,10 +366,10 @@ class Revision(object):
 
     _context = ".draft"
     _default_description = {
-        "error": "The build failed.",
-        "pending": "compiling PDF with changes highlighted",
+        "error": "Build failed. Please mention @andycasey",
+        "pending": "Compiling PDF with changes highlighted",
         "success": "PDF compiled successfully",
-        "failure": "could not compile the PDF"
+        "failure": "Could not compile the PDF"
     }
 
 
@@ -482,7 +482,7 @@ class Revision(object):
 
         else:
             # Add comment to commit.
-            head_sha = self._payload.get("head", None)
+            head_sha = self._payload.get("after", None)
             if head_sha is None:
                 head_sha = self._payload["pull_request"]["head"]["sha"]
 
