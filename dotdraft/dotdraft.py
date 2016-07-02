@@ -536,7 +536,7 @@ class Revision(object):
         # Load the settings.
 
         # Run difftex on the before and after.
-        manuscript_diff = git_utils.latexdiff(base_path, head_path, **settings)
+        manuscript_diff = latexdiff(base_path, head_path, **settings)
 
         # Compile the manuscript_diff file.
         # Copy the ulem.sty file into that dir first.
