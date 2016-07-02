@@ -6,7 +6,6 @@
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 
-__all__ = ["webhook"]
 
 import json
 import logging
