@@ -180,11 +180,17 @@ def oauth_create_user():
     the session.
     """
 
+    print("SESSION", session, session["access_token"])
+    print("USER", g.user.id)
+
+    return "OK", 200
     database = get_database()
     cursor = database.cursor()
 
     # Check if this user already exists.
     cursor.execute("SELECT token FROM users WHERE id = %s", (g.user.id, ))
+
+    print("num of rows matching", cursor.rowcount)
 
     if not cursor.rowcount:
         # Create a new user.
