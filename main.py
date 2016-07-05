@@ -210,7 +210,7 @@ def oauth_create_user():
 def account():
     # TODO: Show repositories 
 
-    return render_template("account.hml", user=g.user)
+    return render_template("account.html", user=g.user)
     #hi {}".format(g.user.name)
 
 
@@ -221,11 +221,16 @@ def sync_repositories():
     Synchronize the list of repositories.
     """
 
-    dotdraft.integration.sync_repositories(g.user, database)
+    database = get_database()
 
-    # If it doesn't exist, add with zero.
+    N = dotdraft.integration.sync_repositories(g.user, database)
 
-    # If it 
+    # Commit the database.
+    database.commit()
+
+    return json.dumps(dict(zip(("added", "updated", "deleted"), N))))
+    
+
 
 @app.route("/enable/<repository>")
 @authentication_required

@@ -91,9 +91,19 @@ def disable(owner, repository, database, sync=True):
 
 
 def sync_repositories(user, database):
+    """
+    Synchronize the list of repositories in the local database for the given
+    user with what is listed on GitHub.
+
+    :param user:
+        The GitHub user.
+
+    :param database:
+        A connection to the local database.
+    """
 
     cursor = database.cursor()
-    cursor.execute("SELECT id, name FROM repos WHERE user_id = %s", (user.id))
+    cursor.execute("SELECT id, name FROM repos WHERE user_id = %s", (user.id, ))
     local_repos = dict(cursor.fetchall() or {})
 
     # Now get information from GitHub.
@@ -107,14 +117,39 @@ def sync_repositories(user, database):
 
         github_repos.update(dict([(repo.id, repo.name) for repo in repo_page \
             if repo.owner.id == user.id]))
+        i += 1
 
     # Find repositories that are not local.
-    new_repo_ids =  set(github_repos()).difference(local_repos)
-    print("new repo ids", new_repo_ids)
+    added = set(github_repos).difference(local_repos)
+    for repo_id in added:
+        logging.debug("Adding repo {0} ({1}) from user {2} ({3})".format(
+            repo_id, github_repos[repo_id], user.id, user.name))
 
-
+        cursor.execute(
+            "INSERT INTO repos (id, user_id, name) VALUES (%s, %s, %s)",
+            (repo_id, user.id, github_repos[repo_id]))
 
     # Find repositories with updated names.
+    updated = [(d, k) for d, k in github_repos.items() if local_repos.get(d, k) != k]
+    for repo_id, new_repo_name in updated:
+        logging.debug("Updating repo {0} with name {1}".format(
+            repo_id, new_repo_name))
+        cursor.execute("UPDATE repos SET name = %s WHERE id = %s",
+            (new_repo_name, repo_id))
+
+    # Delete any repositories that are no longer on GitHub.
+    deleted = set(local_repos).difference(github_repos)
+    for repo_id in deleted:
+        logging.debug("Deleting repo {}".format(repo_id))
+        cursor.execute("DELETE FROM repos WHERE id = %s", (repo_id, ))
+
+    logging.debug("User {} ({}) added: {}, updated: {}, deleted: {}".format(
+        user.id, user.name, len(added), len(updated), len(deleted)))
+
+    cursor.close()
+    
+    return (len(added), len(updated), len(deleted))
+
 
 
 def repositories(database, user_ids=None, check_hooks=True):
