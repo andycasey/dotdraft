@@ -94,23 +94,27 @@ def sync_repositories(user, database):
 
     cursor = database.cursor()
     cursor.execute("SELECT id, name FROM repos WHERE user_id = %s", (user.id))
-    local_repos = cursor.fetchall() or {}
-
-
+    local_repos = dict(cursor.fetchall() or {})
 
     # Now get information from GitHub.
 
     # Get all the repos.
-    origin_repos = {}
+    github_repos = {}
     i, repos = 0, user.get_repos()
     while True:
         repo_page = repos.get_page(i)
         if not repo_page: break
 
-        origin_repos.update(dict([(repo.id, repo.name) for repo in repo_page \
+        github_repos.update(dict([(repo.id, repo.name) for repo in repo_page \
             if repo.owner.id == user.id]))
 
+    # Find repositories that are not local.
+    new_repo_ids =  set(github_repos()).difference(local_repos)
+    print("new repo ids", new_repo_ids)
 
+
+
+    # Find repositories with updated names.
 
 
 def repositories(database, user_ids=None, check_hooks=True):

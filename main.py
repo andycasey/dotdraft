@@ -201,25 +201,27 @@ def oauth_create_user():
     database.commit()
 
     # Redirect to the account area.
-    return redirect("/login")
+    return redirect("/account")
 
 
 
-@app.route("/login")
+@app.route("/account")
 @authentication_required
-def login():
+def account():
     # TODO: Show repositories 
-    return "hi {}".format(g.user.name)
+
+    return render_template("account.hml", user=g.user)
+    #hi {}".format(g.user.name)
 
 
-@app.route("/sync")
+@app.route("/account/sync")
 @authentication_required
-def sync_repo_list():
+def sync_repositories():
     """
     Synchronize the list of repositories.
     """
 
-    dotdraft.integration.sync_repositories(user, database)
+    dotdraft.integration.sync_repositories(g.user, database)
 
     # If it doesn't exist, add with zero.
 
