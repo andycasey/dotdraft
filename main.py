@@ -62,7 +62,7 @@ def authentication_required(f):
             r = cursor.fetchone()
             cursor.close()
 
-        if token is None or r is None:
+        if token is None and r is None:
             return redirect("/signup")
 
         # Get the user.
@@ -173,7 +173,7 @@ def oauth_callback():
 
 
 @app.route("/oauth/create")
-#@authentication_required
+@authentication_required
 def oauth_create_user():
     """
     Create a user account for `.draft` now that we have a GitHub access token in
