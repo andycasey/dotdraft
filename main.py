@@ -183,7 +183,6 @@ def oauth_create_user():
     print("SESSION", session, session["access_token"])
     print("USER", g.user.id)
 
-    return "OK", 200
     database = get_database()
     cursor = database.cursor()
 
