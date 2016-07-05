@@ -228,7 +228,7 @@ def sync_repositories():
     return json.dumps(dict(zip(("total", "added", "updated", "deleted"), N)))
     
 
-@app.route("/enable/<repository>")
+@app.route("/account/enable/<repository>")
 @authentication_required
 def enable(repository):
     """
@@ -238,12 +238,12 @@ def enable(repository):
         The name of the repository.
     """
 
-    if dotdraft.hooks.enable(g.user, repository, database):
+    if dotdraft.hooks.enable(g.user, repository, get_database()):
         return ("OK", 200)
     return (render_template("500.html"), 500)
 
 
-@app.route("/disable/<repository>")
+@app.route("/account/disable/<repository>")
 @authentication_required
 def disable(repository):
     """
@@ -253,7 +253,7 @@ def disable(repository):
         The name of the repository.
     """
 
-    if dotdraft.hooks.disable(g.user, repository, database):
+    if dotdraft.hooks.disable(g.user, repository, get_database()):
         return ("OK", 200)
     return (render_template("500.html"), 500)
 
