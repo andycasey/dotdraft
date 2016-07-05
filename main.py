@@ -217,18 +217,15 @@ def account():
 @app.route("/account/sync")
 @authentication_required
 def sync_repositories():
-    """
-    Synchronize the list of repositories.
-    """
+    """ Synchronize the list of repositories from GitHub. """
 
     database = get_database()
-
     N = dotdraft.integration.sync_repositories(g.user, database)
 
     # Commit the database.
     database.commit()
 
-    return json.dumps(dict(zip(("added", "updated", "deleted"), N))))
+    return json.dumps(dict(zip(("added", "updated", "deleted"), N)))
     
 
 
