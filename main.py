@@ -173,7 +173,7 @@ def oauth_callback():
 
 
 @app.route("/oauth/create")
-@authentication_required
+#@authentication_required
 def oauth_create_user():
     """
     Create a user account for `.draft` now that we have a GitHub access token in
