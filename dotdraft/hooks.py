@@ -59,7 +59,7 @@ def enable(owner, repository, database):
     """
 
     # Does the repository exist?
-    repo = user.get_repo(repository)
+    repo = owner.get_repo(repository)
 
     # If the hook already exists, we will get a github.GithubException
     hook = repo.create_hook("web", events=["push", "pull_request"], config={
@@ -74,13 +74,13 @@ def enable(owner, repository, database):
         cur.execute(
             """ INSERT INTO repos (id, user_id, name, hook_id)
                 VALUES (%s, %s, %s, %s)""",
-            (repo.id, user.id, repo.name, hook.id))
+            (repo.id, owner.id, repo.name, hook.id))
 
     else:
 
         # Update the database with the hook id.
         cur.execute("UPDATE repos SET hook_id = %s WHERE id = %s",
-            (hook.id, user.id))
+            (hook.id, owner.id))
 
     return None
 
