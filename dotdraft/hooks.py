@@ -1,4 +1,5 @@
 
+import logging
 import github
 import os
 
@@ -147,7 +148,7 @@ def sync_repositories(user, database):
         user.id, user.name, len(added), len(updated), len(deleted)))
 
     cursor.close()
-    
+
     return (len(added), len(updated), len(deleted))
 
 
