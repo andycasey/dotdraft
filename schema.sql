@@ -16,8 +16,8 @@ CREATE TABLE users (
     email char(250) not null,
     token char(40) not null,
     scope char(120) not null,
-    created timestamp without time zone not null,
-    last_sync timestamp without time zone not null
+    created timestamp without time zone,
+    last_sync timestamp without time zone
 
 );
 ALTER TABLE users ALTER created SET default now();
