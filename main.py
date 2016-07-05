@@ -238,9 +238,8 @@ def enable(repository):
         The name of the repository.
     """
 
-    if dotdraft.hooks.enable(g.user, repository, get_database()):
-        return ("OK", 200)
-    return (render_template("500.html"), 500)
+    dotdraft.hooks.enable(g.user, repository, get_database())
+    return ("OK", 200)
 
 
 @app.route("/account/disable/<repository>")
@@ -253,11 +252,9 @@ def disable(repository):
         The name of the repository.
     """
 
-    if dotdraft.hooks.disable(g.user, repository, get_database()):
-        return ("OK", 200)
-    return (render_template("500.html"), 500)
+    dotdraft.hooks.disable(g.user, repository, get_database())
 
-
+    return ("OK", 200)
 
 
 @app.route("/", methods=["POST"])
