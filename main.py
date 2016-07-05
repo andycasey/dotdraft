@@ -220,14 +220,13 @@ def sync_repositories():
     """ Synchronize the list of repositories from GitHub. """
 
     database = get_database()
-    N = dotdraft.integration.sync_repositories(g.user, database)
+    N = dotdraft.hooks.sync_repositories(g.user, database)
 
     # Commit the database.
     database.commit()
 
     return json.dumps(dict(zip(("total", "added", "updated", "deleted"), N)))
     
-
 
 @app.route("/enable/<repository>")
 @authentication_required
@@ -239,7 +238,7 @@ def enable(repository):
         The name of the repository.
     """
 
-    if dotdraft.hooks.enable(user, repository, database):
+    if dotdraft.hooks.enable(g.user, repository, database):
         return ("OK", 200)
     return (render_template("500.html"), 500)
 
@@ -254,7 +253,7 @@ def disable(repository):
         The name of the repository.
     """
 
-    if dotdraft.hooks.disable(user, repository, database):
+    if dotdraft.hooks.disable(g.user, repository, database):
         return ("OK", 200)
     return (render_template("500.html"), 500)
 

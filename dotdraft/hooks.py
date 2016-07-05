@@ -4,6 +4,7 @@ import github
 import os
 
 
+_HOOK_NAME = ".draft"
 
 def synchronize(owner, repository, database):
     """
@@ -44,27 +45,62 @@ def synchronize(owner, repository, database):
 
 
 def enable(owner, repository, database):
+    """
+    Enable a repository by adding a webhook on GitHub.
 
+    :param owner:
+        The owner of the repository.
+
+    :param repository:
+        The name of the repository to enable.
+
+    :param database:
+        A connection to the local database.
+    """
 
     # Does the repository exist?
-    repo = user.get_repo(repository) # TODO: if it doesn't?
-    
-    raise a
-    # Create a webhook.
-    repo.cr
+    repo = user.get_repo(repository)
 
-    # Update hook id in the database.
+    # If the hook already exists, we will get a github.GithubException
+    hook = repo.create_hook("web", events=["push", "pull_request"], config={
+        "url": os.environ["HEROKU_URL"],
+        "content_type": "json"
+        })
 
-    # Is this repository in the database? If it is, set it as enabled.
-    # Otherwise, create it.
+    # Check this repository exists in our database?
+    cur = database.cursor()
+    cur.execute("SELECT name FROM repos WHERE id = %s")
+    if not cur.fetchone:
+        cur.execute(
+            """ INSERT INTO repos (id, user_id, name, hook_id)
+                VALUES (%s, %s, %s, %s)""",
+            (repo.id, user.id, repo.name, hook.id))
 
-    return True
+    else:
+
+        # Update the database with the hook id.
+        cur.execute("UPDATE repos SET hook_id = %s WHERE id = %s",
+            (hook.id, user.id))
+
+    return None
 
 
 
-def disable(owner, repository, database, sync=True):
+def disable(owner, repository, database):
+    """
+    Disable a repository by removing the webhook on GitHub.
 
-    repo = owner.get_repo(repository) # What if it doesn't exist?!
+    :param owner:
+        The owner of the repository.
+
+    :param repository:
+        The name of the repository to disable.
+
+    :param database:
+        A connection to the local database.
+    """
+
+    repo = owner.get_repo(repository)
 
     # Get the hook ID from the database.
     cursor = database.cursor()
@@ -79,16 +115,10 @@ def disable(owner, repository, database, sync=True):
             "UPDATE repos SET hook_id = %s WHERE id = %s", (0, repo.id))
         database.commit()
 
-        return True
-
-    elif sync:
-        synchronize(owner, repository, database)
-        disable(owner, repository, database, sync=False)
-
     else:
         logging.warn("Repository is already disabled.")
 
-    return True
+    return None
 
 
 def sync_repositories(user, database):
