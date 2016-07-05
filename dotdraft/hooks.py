@@ -69,15 +69,15 @@ def enable(owner, repository, database):
 
     # Check this repository exists in our database?
     cur = database.cursor()
-    cur.execute("SELECT name FROM repos WHERE id = %s")
+    cur.execute("SELECT name FROM repos WHERE id = %s", (repo.id, ))
     if not cur.fetchone:
+        # Create the repository in the local directory.        
         cur.execute(
             """ INSERT INTO repos (id, user_id, name, hook_id)
                 VALUES (%s, %s, %s, %s)""",
             (repo.id, owner.id, repo.name, hook.id))
 
     else:
-
         # Update the database with the hook id.
         cur.execute("UPDATE repos SET hook_id = %s WHERE id = %s",
             (hook.id, owner.id))
