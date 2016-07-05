@@ -1,6 +1,6 @@
 import json
 import logging
-import github as gh
+import github
 import requests
 import os
 import psycopg2 as pg
@@ -63,11 +63,10 @@ def authentication_required(f):
             cursor.close()
 
         if token is None or r is None:
-            print("token is ", token)
             return redirect("/signup")
 
         # Get the user.
-        g.user = gh.Github(login_or_token=token).get_user()
+        g.user = github.Github(login_or_token=token).get_user()
 
         return f(*args, **kwargs)
     return decorated_function
@@ -79,45 +78,6 @@ def authentication_required(f):
 def root():
     return render_template("index.html") 
 
-
-
-@app.route("/login")
-@authentication_required
-def login():
-    return "hi {}".format(g.user.name)
-
-
-
-#@app.route("/event", methods=["POST"])
-@app.route("/", methods=["POST"])
-def trigger_event():
-    """ A webhook has been triggered from GitHub. """
-
-    database = get_database()
-
-    revision = dotdraft.Revision(request, database)
-    if not revision.is_valid or not revision.is_expected:
-        logging.info("Not valid or expected.")
-        return ("", 200)
-
-    # OK, we are going to build it!
-    try:
-        build_identifier = revision.build()
-
-    except:
-        # stdout, stderr
-        logging.exception("Failed to build")
-
-        revision.set_state("error",
-            target_url="https://github.com/andycasey/dotdraft/issues/new")
-
-    else:
-        # Update the state / add a comment on the commit.
-        logging.info("Completed build {}".format(build_identifier))
-
-    database.commit()
-
-    return ("", 200)
 
 
 @app.route("/signup")
@@ -156,6 +116,7 @@ def oauth_redirect():
     return redirect(url)
 
 
+
 @app.route("/oauth")
 def oauth_callback():
     """
@@ -168,7 +129,8 @@ def oauth_callback():
     if state is None:
         return (render_template("403.html"), 403)
 
-    cursor = get_database().cursor()
+    database = get_database()
+    cursor = database.cursor()
     cursor.execute(
         "SELECT ip_address, created FROM oauth_states WHERE state = %s",
         (state, ))
@@ -176,7 +138,7 @@ def oauth_callback():
     # TODO: Make oauth_tokens expire? Require the same IP address?
 
     # Do we have this state?
-    if cursor.fetchone() is None:
+    if not cursor.rowcount:
         cursor.close()
         return (render_template("403.html"), 403)
 
@@ -189,49 +151,143 @@ def oauth_callback():
     # Send this to GitHub.
     r = requests.post("https://github.com/login/oauth/access_token", data=data,
         headers={"Accept": "application/json"})
+
     if r.status_code == 200:
 
+        # Redirect to /create
         payload = r.json()
-
-        # Need to know who this user is.
-        user = gh.Github(login_or_token=payload["access_token"]).get_user()
-        primary_email_address \
-            = [item["email"] for item in user.get_emails() if item["primary"]][0]
-
-        # Create a new user?
-        user_id = cursor.execute(
-            "SELECT id FROM users WHERE email = %s", (primary_email_address, ))
-        user_id = cursor.fetchone()
-
-        if user_id is None:
-            # Create new user.
-            logging.info("Creating new user: {}".format(primary_email_address))
-
-            cursor.execute(
-                "INSERT INTO users (email, token, scope) VALUES (%s, %s, %s)",
-                (primary_email_address, payload["access_token"], payload["scope"]))
-
-        else:
-            # Update existing token.
-            logging.info(
-                "User ({}) known. Updating token.".format(primary_email_address))
-
-            cursor.execute(
-                "UPDATE users SET token = %s WHERE id = %s",
-                (payload["access_token"], user_id[0]))
-
         session["access_token"] = payload["access_token"]
 
         # Delete the state, since we no longer need it.
         cursor.execute("DELETE FROM oauth_states WHERE state = %s", (state, ))
 
         cursor.close()
-        get_database().commit()
+        database.commit()
 
-        return redirect("/login")
+        return redirect("/oauth/create")
 
     else:
+        cursor.close()
         return (render_template("500.html"), 500)
+
+
+
+@app.route("/oauth/create")
+@authentication_required
+def oauth_create_user():
+    """
+    Create a user account for `.draft` now that we have a GitHub access token in
+    the session.
+    """
+
+    database = get_database()
+    cursor = database.cursor()
+
+    # Check if this user already exists.
+    cursor.execute("SELECT token FROM users WHERE id = %s", (g.user.id, ))
+
+    if not cursor.rowcount:
+        # Create a new user.
+        cursor.execute(
+            """ INSERT INTO users (id, email, token)
+                            VALUES (%s, %s, %s, %s)""",
+            (g.user.id, g.user.email, session["access_token"]))
+
+    else:
+        # Update token for this user.
+        cursor.execute("UPDATE users SET token = %s WHERE id = %s",
+            (session["access_token"], g.user.id, ))
+
+    cursor.close()
+    database.commit()
+
+    # Redirect to the account area.
+    return redirect("/login")
+
+
+
+@app.route("/login")
+@authentication_required
+def login():
+    # TODO: Show repositories 
+    return "hi {}".format(g.user.name)
+
+
+@app.route("/sync")
+@authentication_required
+def sync_repo_list():
+    """
+    Synchronize the list of repositories.
+    """
+
+    dotdraft.integration.sync_repositories(user, database)
+
+    # If it doesn't exist, add with zero.
+
+    # If it 
+
+@app.route("/enable/<repository>")
+@authentication_required
+def enable(repository):
+    """
+    Enable `.draft` to run on the given repository.
+
+    :param repository:
+        The name of the repository.
+    """
+
+    if dotdraft.hooks.enable(user, repository, database):
+        return ("OK", 200)
+    return (render_template("500.html"), 500)
+
+
+@app.route("/disable/<repository>")
+@authentication_required
+def disable(repository):
+    """
+    Disable `.draft` from running on a given repository.
+
+    :param repository:
+        The name of the repository.
+    """
+
+    if dotdraft.hooks.disable(user, repository, database):
+        return ("OK", 200)
+    return (render_template("500.html"), 500)
+
+
+
+
+@app.route("/", methods=["POST"])
+def trigger_event():
+    """ A webhook has been triggered from GitHub. """
+
+    database = get_database()
+
+    revision = dotdraft.Revision(request, database)
+    if not revision.is_valid or not revision.is_expected:
+        logging.info("Not valid or expected.")
+        return ("", 200)
+
+    # OK, we are going to build it!
+    try:
+        build_identifier = revision.build()
+
+    except:
+        # stdout, stderr
+        logging.exception("Failed to build")
+
+        revision.set_state("error",
+            target_url="https://github.com/andycasey/dotdraft/issues/new")
+
+    else:
+        # Update the state / add a comment on the commit.
+        logging.info("Completed build {}".format(build_identifier))
+
+    database.commit()
+
+    return ("", 200)
+
 
 
 @app.route("/pdf/<build_id>.pdf")
@@ -275,6 +331,9 @@ def pdf(build_id):
     # TODO: return a more useful PDF name.
 
     return response
+
+
+
 
 
 @app.route("/build/<build_id>")
