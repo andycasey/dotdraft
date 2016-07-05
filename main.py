@@ -225,7 +225,7 @@ def sync_repositories():
     # Commit the database.
     database.commit()
 
-    return json.dumps(dict(zip(("added", "updated", "deleted"), N)))
+    return json.dumps(dict(zip(("total", "added", "updated", "deleted"), N)))
     
 
 

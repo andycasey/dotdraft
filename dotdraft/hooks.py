@@ -101,10 +101,19 @@ def sync_repositories(user, database):
 
     :param database:
         A connection to the local database.
+
+    :returns:
+        A four-length tuple containing: the total number of repositories, the 
+        number of repositories that were added, the number of repositories that
+        were updated, and the number of repositories that were deleted.
     """
 
     cursor = database.cursor()
-    cursor.execute("SELECT id, name FROM repos WHERE user_id = %s", (user.id, ))
+    cursor.execute(
+        """ SELECT id, regexp_replace(name, '\s+$', '') 
+            FROM repos
+            WHERE user_id = %s""",
+        (user.id, ))
     local_repos = dict(cursor.fetchall() or {})
 
     # Now get information from GitHub.
@@ -133,8 +142,9 @@ def sync_repositories(user, database):
     # Find repositories with updated names.
     updated = [(d, k) for d, k in github_repos.items() if local_repos.get(d, k) != k]
     for repo_id, new_repo_name in updated:
-        logging.debug("Updating repo {0} with name {1}".format(
-            repo_id, new_repo_name))
+        raise a
+        logging.debug("Updating repo {0} with name '{1}' (from '{2}')".format(
+            repo_id, new_repo_name, local_repos[repo_id]))
         cursor.execute("UPDATE repos SET name = %s WHERE id = %s",
             (new_repo_name, repo_id))
 
@@ -149,7 +159,7 @@ def sync_repositories(user, database):
 
     cursor.close()
 
-    return (len(added), len(updated), len(deleted))
+    return (len(github_repos), len(added), len(updated), len(deleted))
 
 
 
