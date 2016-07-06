@@ -77,10 +77,10 @@ def enable(owner, repository, database):
                 VALUES (%s, %s, %s, %s)""",
             (repo.id, owner.id, repo.name, hook.id))
 
-    else:
+    else:        
         # Update the database with the hook id.
-        cur.execute("UPDATE repos SET hook_id = %s WHERE id = %s",
-            (hook.id, owner.id))
+        cur.execute(
+            "UPDATE repos SET hook_id = %s WHERE id = %s", (hook.id, repo.id))
 
     database.commit()
     cur.close()
