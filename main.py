@@ -211,20 +211,17 @@ def oauth_create_user():
 @app.route("/account")
 @authentication_required
 def account():
-    # TODO: Show repositories 
+    """ Show the main area for users that are logged in. """
 
     database = get_database()
     cursor = database.cursor()
 
-    cursor.execute("SELECT name, hook_id FROM repos WHERE user_id = %s", (g.user.id, ))
+    cursor.execute(
+        "SELECT name, hook_id FROM repos WHERE user_id = %s", (g.user.id, ))
     repositories \
         = [dict(zip(["name", "hook_id"], v)) for v in (cursor.fetchall() or {})]
 
-    print("repositories", repositories)
-
     return render_template("account.html", user=g.user, repositories=repositories)
-    
-    #hi {}".format(g.user.name)
 
 
 @app.route("/account/sync")
