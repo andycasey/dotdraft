@@ -1,12 +1,18 @@
 
-Hi {{user.name}}
+Hi {{user.name}}!<br /><br />
 
 
 Your repositories:<br />
 
 {% for repository in repositories %}
 
-    {{ repository.name }} : {{ repository.hook_id }}</br>
+    {{ repository.name }} : 
+        {% if repository.hook_id > 0 %}
+            <a href="/account/disable/{{ repository.name }}">enabled</a>
+        {% endif %}
+            <a href="/account/enable/{{ repository.name }}">disabled</a>
+        {% else %}
+    <br />
 
 {% endfor %}
 
