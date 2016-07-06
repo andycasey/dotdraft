@@ -82,6 +82,9 @@ def enable(owner, repository, database):
         cur.execute("UPDATE repos SET hook_id = %s WHERE id = %s",
             (hook.id, owner.id))
 
+    database.commit()
+    cur.close()
+
     return None
 
 
@@ -118,6 +121,7 @@ def disable(owner, repository, database):
     else:
         logging.warn("Repository is already disabled.")
 
+    cursor.close()
     return None
 
 
