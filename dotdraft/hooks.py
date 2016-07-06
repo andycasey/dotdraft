@@ -108,7 +108,7 @@ def disable(owner, repository, database):
     # Get the hook ID from the database.
     cursor = database.cursor()
     cursor.execute("SELECT hook_id FROM repos WHERE id = %s", (repo.id, ))
-    hook_id = cursor.rowcount()
+    hook_id = cursor.fetchone()[0]
 
     if hook_id > 0:
         hook = repo.get_hook(hook_id)
