@@ -235,9 +235,12 @@ def sync_repositories():
     # Commit the database.
     database.commit()
 
-    return json.dumps(dict(zip(("total", "added", "updated", "deleted"), N)))
-    
+    # json.dumps(dict(zip(("total", "added", "updated", "deleted"), N)))
 
+    # Redirect to the account area.
+    return redirect("/account")
+
+    
 @app.route("/account/enable/<repository>")
 @authentication_required
 def enable(repository):
@@ -249,7 +252,9 @@ def enable(repository):
     """
 
     dotdraft.hooks.enable(g.user, repository, get_database())
-    return ("OK", 200)
+
+    # Redirect to the account area.
+    return redirect("/account")
 
 
 @app.route("/account/disable/<repository>")
@@ -264,7 +269,8 @@ def disable(repository):
 
     dotdraft.hooks.disable(g.user, repository, get_database())
 
-    return ("OK", 200)
+    # Redirect to the account area.
+    return redirect("/account")
 
 
 @app.route("/", methods=["POST"])
