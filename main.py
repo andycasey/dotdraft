@@ -217,9 +217,10 @@ def account():
     cursor = database.cursor()
 
     cursor.execute(
-        "SELECT name, hook_id FROM repos WHERE user_id = %s", (g.user.id, ))
+        "SELECT name, hook_id FROM repos WHERE user_id = %s ORDER BY name ASC",
+        (g.user.id, ))
     repositories \
-        = [dict(zip(["name", "hook_id"], v)) for v in (cursor.fetchall() or {})]
+        = [OrderedDict(zip(["name", "hook_id"], v)) for v in (cursor.fetchall() or {})]
 
     return render_template("account.html", user=g.user, repositories=repositories)
 
