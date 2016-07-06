@@ -192,6 +192,9 @@ def oauth_create_user():
             "INSERT INTO users (id, email, token) VALUES (%s, %s, %s)",
             (g.user.id, g.user.email, session["access_token"]))
 
+        # Synchronize list of repositories.
+        dotdraft.hooks.sync_repositories(g.user, database)
+
     else:
         # Update token for this user.
         cursor.execute("UPDATE users SET token = %s WHERE id = %s",

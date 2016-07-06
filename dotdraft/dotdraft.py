@@ -424,6 +424,11 @@ class Revision(object):
         """ Return the name of the associated repository. """
         return self._payload["repository"]["name"]
 
+    @property
+    def repo_id(self):
+        """ Return the id of the associated repository. """
+        return self._payload["repository"]["id"]
+        
 
     @property
     def owner(self):
