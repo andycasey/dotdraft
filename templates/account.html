@@ -2,3 +2,11 @@
 Hi {{user.name}}
 
 
+Your repositories:<br />
+
+{% for repository in repositories %}
+
+    {{ repository.name }} : {{ repository.hook_id }}</br>
+
+{% endfor %}
+

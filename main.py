@@ -213,7 +213,17 @@ def oauth_create_user():
 def account():
     # TODO: Show repositories 
 
-    return render_template("account.html", user=g.user)
+    database = get_database()
+    cursor = database.cursor()
+
+    cursor.execute("SELECT name, hook_id FROM repos WHERE user_id = %s", (g.user.id, ))
+    repositories \
+        = [dict(zip(["name", "hook_id"], v)) for v in (cursor.fetchall() or {})]
+
+    print("repositories", repositories)
+
+    return render_template("account.html", user=g.user, repositories=repositories)
+    
     #hi {}".format(g.user.name)
 
 
