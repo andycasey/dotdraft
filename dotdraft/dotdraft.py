@@ -403,8 +403,13 @@ class Revision(object):
         """ Access token for GitHub for this revision. """
 
         cursor = self._database.cursor()
-        cursor.execute("SELECT token FROM users LIMIT 1")
-        token = None if cursor.rowcount == 0 else cursor.fetchone()[0]
+        cursor.execute(
+            """ SELECT users.token
+                FROM users, repos 
+                WHERE   repos.user_id = users.id 
+                    AND repos.id = %s""",
+            (self.repo_id, ))
+        token = None if not cursor.rowcount else cursor.fetchone()[0]
         cursor.close()
 
         return token
@@ -428,7 +433,7 @@ class Revision(object):
     def repo_id(self):
         """ Return the id of the associated repository. """
         return self._payload["repository"]["id"]
-        
+
 
     @property
     def owner(self):
