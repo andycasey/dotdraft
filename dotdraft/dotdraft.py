@@ -234,7 +234,8 @@ def latexdiff(old_path, new_path, **kwargs):
     # Generate a temporary unused path for the difference file.
     repository_path = os.path.dirname(old_path)
 
-    diff_path = utils.get_unused_filename(repository_path, suffix=".diff.tex")
+    diff_path = utils.get_unused_filename(
+        os.path.dirname(new_path), suffix=".diff.tex")
 
     # Execute latexdiff given some acceptable keywords.
     # TODO: allow keywords to get passed through here.
