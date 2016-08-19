@@ -43,4 +43,3 @@ Create your own `.draft` app on Heroku
     ````
     heroku addons:create heroku-postgresql:hobby-basic
     ````
-
