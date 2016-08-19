@@ -57,3 +57,4 @@ The standard `.draft` build will work for any public repository, but if you want
 License
 -------
 Released under MIT license. For more information, see the [`LICENSE`](LICENSE) file. Copyright 2016 Andy Casey.
+
