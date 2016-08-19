@@ -332,8 +332,9 @@ def copy_previous_manuscript(repository_path, before_hash, manuscript_basename):
     while os.path.exists(os.path.join(repository_path, before_basename)):
         before_basename = "{}.tex".format(utils.random_string())
 
+    N = len(repository_path) # Need path relative to main repository path.
     r = git("show {}:{} > {}".format(
-            before_hash, os.path.basename(manuscript_basename), before_basename),
+            before_hash, manuscript_basename[N:], before_basename),
         cwd=repository_path)
 
     return os.path.join(repository_path, before_basename)
