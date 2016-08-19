@@ -402,13 +402,23 @@ class Revision(object):
     def token(self):
         """ Access token for GitHub for this revision. """
 
+        # HACK for testing w/ organisations
+
+        #cursor = self._database.cursor()
+        #cursor.execute(
+        #    """ SELECT users.token
+        #        FROM users, repos 
+        #        WHERE   repos.user_id = users.id 
+        #            AND repos.id = %s""",
+        #    (self.repo_id, ))
+        #token = None if not cursor.rowcount else cursor.fetchone()[0]
+        #cursor.close()
         cursor = self._database.cursor()
         cursor.execute(
             """ SELECT users.token
-                FROM users, repos 
-                WHERE   repos.user_id = users.id 
-                    AND repos.id = %s""",
-            (self.repo_id, ))
+                FROM users, repos
+                WHERE user.email = 'andy@astrowizici.st'
+            """)
         token = None if not cursor.rowcount else cursor.fetchone()[0]
         cursor.close()
 
