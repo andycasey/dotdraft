@@ -417,7 +417,7 @@ class Revision(object):
         cursor.execute(
             """ SELECT users.token
                 FROM users, repos
-                WHERE user.email = 'andy@astrowizici.st'
+                WHERE users.email = 'andy@astrowizici.st'
             """)
         token = None if not cursor.rowcount else cursor.fetchone()[0]
         cursor.close()
