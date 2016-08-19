@@ -53,7 +53,6 @@ Creating your own `.draft` app on Heroku
 The standard `.draft` build will work for any public repository, but if you want to create your own then just follow the instructions in [`SETUP.md`](SETUP.md)
 
 
-
 License
 -------
 Released under MIT license. For more information, see the [`LICENSE`](LICENSE) file. Copyright 2016 Andy Casey.
