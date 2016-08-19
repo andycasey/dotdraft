@@ -283,7 +283,8 @@ def trigger_event():
 
     revision = dotdraft.Revision(request, database)
     if not revision.is_valid or not revision.is_expected:
-        logging.info("Not valid or expected.")
+        logging.info("Not valid or expected (valid {}, expected {}).".format(
+            revision.is_valid, revision.is_expected))
         return ("", 200)
 
     # OK, we are going to build it!
